@@ -1,0 +1,95 @@
+/* Inventory Styling */
+.inventory-board {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.inventory-header {
+    background: var(--bg-secondary);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.item-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+}
+
+.item-card:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: var(--accent-primary);
+}
+
+.item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.item-name {
+    font-size: 1.1rem;
+    margin-right: 0.5rem;
+}
+
+.item-type {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 0.5rem;
+}
+
+.item-description {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    flex-grow: 1;
+}
+
+.item-stats {
+    background: var(--bg-primary);
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    color: var(--text-tertiary);
+}
+
+.stat-value {
+    color: var(--accent-primary);
+    font-weight: bold;
+}
+
+.item-actions {
+    margin-top: auto;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.no-items {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    color: var(--text-tertiary);
+}

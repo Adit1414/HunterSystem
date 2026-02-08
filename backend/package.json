@@ -1,0 +1,29 @@
+{
+  "name": "hunter-system-backend",
+  "version": "1.0.0",
+  "description": "Backend for Solo Leveling inspired productivity app",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "init-db": "node src/config/initDatabase.js"
+  },
+  "keywords": [
+    "productivity",
+    "gamification",
+    "solo-leveling"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@langchain/community": "^0.0.20",
+    "better-sqlite3": "^12.6.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "langchain": "^0.1.0",
+    "path": "^0.12.7",
+    "url": "^0.11.4"
+  }
+}

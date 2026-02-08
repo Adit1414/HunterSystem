@@ -1,0 +1,7 @@
+run = "npm run replit-setup"
+
+[nix]
+channel = "stable-23_11"
+
+[env]
+nodes = "20"
