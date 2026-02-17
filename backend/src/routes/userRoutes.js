@@ -87,11 +87,9 @@ router.post('/stats', async (req, res) => {
       return res.status(400).json({ error: 'Not enough stat points' });
     }
 
-    // Update stats using transaction pattern (manual)
-    try {
-      await db.exec('BEGIN');
-
-      await db.run(`
+    // Update stats using transaction pattern
+    await db.transaction(async (tx) => {
+      await tx.run(`
         UPDATE users
         SET strength = strength + ?,
             agility = agility + ?,
@@ -109,12 +107,7 @@ router.post('/stats', async (req, res) => {
         intelligence || 0,
         pointsToSpend
       ]);
-
-      await db.exec('COMMIT');
-    } catch (err) {
-      await db.exec('ROLLBACK');
-      throw err;
-    }
+    });
 
     const updatedUser = await User.getById(1);
 
@@ -144,18 +137,28 @@ router.post('/stats', async (req, res) => {
  */
 router.post('/reset', async (req, res) => {
   try {
-    await db.exec('BEGIN');
+    await db.transaction(async (tx) => {
+      // Reset user progress (We use direct SQL here as User.reset uses db which is global)
+      // Actually User.reset uses 'db', which is the global adapter.
+      // To participate in transaction, we should use 'tx' directly here or pass tx to model.
+      // For simplicity, let's use SQL here directly or assuming non-interleaved logic?
+      // No, we must use tx.
 
-    // Reset user progress
-    await User.reset(1);
+      await tx.run(`
+        UPDATE users 
+        SET level = 1, xp = 0, total_xp_earned = 0,
+            strength = 10, agility = 10, sense = 10, vitality = 10, intelligence = 10,
+            stat_points = 0,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = 1
+      `);
 
-    // Delete all quests
-    await db.run('DELETE FROM quests');
+      // Delete all quests
+      await tx.run('DELETE FROM quests');
 
-    // Delete all items
-    await db.run('DELETE FROM items');
-
-    await db.exec('COMMIT');
+      // Delete all items
+      await tx.run('DELETE FROM items');
+    });
 
     res.json({
       message: 'Progress reset successfully',
@@ -167,7 +170,7 @@ router.post('/reset', async (req, res) => {
     });
 
   } catch (error) {
-    if (db.exec) await db.exec('ROLLBACK').catch(() => { });
+  } catch (error) {
     console.error('Error resetting progress:', error);
     res.status(500).json({ error: 'Failed to reset progress' });
   }

@@ -220,12 +220,10 @@ router.post('/:id/complete', async (req, res) => {
       statPointsGained = levelUpResult.levelsGained * 5;
     }
 
-    // Start transaction (Manual)
-    try {
-      await db.exec('BEGIN');
-
+    // Start transaction
+    await db.transaction(async (tx) => {
       // Update User
-      await db.run(`
+      await tx.run(`
         UPDATE users 
         SET level = ?, xp = ?, total_xp_earned = total_xp_earned + ?, 
             stat_points = stat_points + ?,
@@ -239,7 +237,7 @@ router.post('/:id/complete', async (req, res) => {
       ]);
 
       // Update Quest
-      await db.run(`
+      await tx.run(`
         UPDATE quests
         SET status = 'completed', completed_at = CURRENT_TIMESTAMP
         WHERE id = ?
@@ -248,14 +246,12 @@ router.post('/:id/complete', async (req, res) => {
       // Insert Items
       // We loop sequentially to be safe in async txn
       for (const item of rewards.items) {
-        await Item.create(item);
+        await tx.run(`
+          INSERT INTO items (id, name, description, rarity, type, obtained_at)
+          VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        `, [item.id, item.name, item.description, item.rarity, item.type]);
       }
-
-      await db.exec('COMMIT');
-    } catch (err) {
-      await db.exec('ROLLBACK');
-      throw err;
-    }
+    });
 
     // Fetch updated user
     const updatedUser = await User.getById(1);
@@ -289,7 +285,7 @@ router.post('/:id/complete', async (req, res) => {
     });
 
   } catch (error) {
-    if (db.exec) await db.exec('ROLLBACK').catch(() => { });
+  } catch (error) {
     console.error('Error completing quest:', error);
     res.status(500).json({ error: 'Failed to complete quest' });
   }
