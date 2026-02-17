@@ -165,10 +165,19 @@ export async function initializeDatabase() {
           intelligence INTEGER DEFAULT 10,
           creation INTEGER DEFAULT 10,
           network INTEGER DEFAULT 10,
+          stat_points INTEGER DEFAULT 0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
+
+      // Migration: Add stat_points if not exists (Postgres)
+      try {
+        await db.exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS stat_points INTEGER DEFAULT 0`);
+      } catch (err) {
+        console.log('Column stat_points likely exists or error adding it:', err.message);
+      }
+
     } else {
       // SQLite Schema
       await db.exec(`
@@ -184,10 +193,23 @@ export async function initializeDatabase() {
           intelligence INTEGER DEFAULT 10,
           creation INTEGER DEFAULT 10,
           network INTEGER DEFAULT 10,
+          stat_points INTEGER DEFAULT 0,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
       `);
+
+      // Migration: Check and add stat_points (SQLite)
+      try {
+        const columns = await db.query("PRAGMA table_info(users)");
+        const hasStatPoints = columns.some(col => col.name === 'stat_points');
+        if (!hasStatPoints) {
+          console.log('Migrating: Adding stat_points to users table...');
+          await db.exec("ALTER TABLE users ADD COLUMN stat_points INTEGER DEFAULT 0");
+        }
+      } catch (err) {
+        console.error('Migration Error (SQLite):', err.message);
+      }
     }
 
     // Quests & Items 
@@ -230,8 +252,8 @@ export async function initializeDatabase() {
     if (userCount === 0) {
       console.log('🌱 Seeding initial user...');
       await db.run(`
-            INSERT INTO users (level, xp, total_xp_earned, strength, agility, sense, vitality, intelligence)
-            VALUES (1, 0, 0, 10, 10, 10, 10, 10)
+            INSERT INTO users (level, xp, total_xp_earned, strength, agility, sense, vitality, intelligence, stat_points)
+            VALUES (1, 0, 0, 10, 10, 10, 10, 10, 0)
         `);
       console.log('✓ Initial user created');
     }
