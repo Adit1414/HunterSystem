@@ -63,7 +63,7 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { title, description, difficulty, dueDate } = req.body;
+    const { title, description, difficulty, dueDate, attribute } = req.body;
 
     // Validation
     if (!title || !difficulty) {
@@ -93,7 +93,8 @@ router.post('/', async (req, res) => {
       description: finalDescription,
       difficulty,
       xp_reward: xpReward,
-      due_date: dueDate
+      due_date: dueDate,
+      attribute: attribute || 'strength'
     });
 
     const quest = await Quest.getById(questId);
@@ -208,35 +209,28 @@ router.post('/:id/complete', async (req, res) => {
     // Calculate XP with bonuses/penalties
     const xpGained = calculateQuestXP(quest, { completedOnTime, recentEasyQuests: recentCount });
 
-    // Process potential level up
-    const levelUpResult = processLevelUp(user.level, user.xp, xpGained);
+    // Update User Progress FIRST to determine level up / rewards
+    // We pass the quest attribute.
+    const xpResult = await User.addXp(user.id, xpGained, quest.attribute || 'strength');
 
-    // Generate rewards (items + special rewards from level up)
-    const rewards = generateQuestRewards(quest.difficulty, levelUpResult.rewards);
-
-    // Calculate stats increase if leveled up
-    let statPointsGained = 0;
-    if (levelUpResult.leveledUp) {
-      statPointsGained = levelUpResult.levelsGained * 5;
+    // Generate special rewards from level up
+    const specialRewards = [];
+    if (xpResult.leveledUp) {
+      let lvl = user.level + 1;
+      for (let i = 0; i < xpResult.levelsGained; i++, lvl++) {
+        if (lvl % 10 === 0) specialRewards.push({ type: 'legendary_choice', message: `Level ${lvl} Milestone!` });
+        else if (lvl % 5 === 0) specialRewards.push({ type: 'guaranteed_rare', message: `Level ${lvl} Milestone!` });
+      }
     }
+
+    // Generate Item Rewards (based on difficulty and if we leveled up)
+    // We reconstruct a partial `levelUpResult` to pass to `generateQuestRewards` if needed, 
+    // but `generateQuestRewards` mainly expects `rewards` array from levelUpResult.
+    const rewards = generateQuestRewards(quest.difficulty, specialRewards);
 
     // Start transaction
     await db.transaction(async (tx) => {
-      // Update User
-      await tx.run(`
-        UPDATE users 
-        SET level = ?, xp = ?, total_xp_earned = total_xp_earned + ?, 
-            stat_points = stat_points + ?,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = 1
-      `, [
-        levelUpResult.newLevel,
-        levelUpResult.newXP,
-        xpGained,
-        statPointsGained
-      ]);
-
-      // Update Quest
+      // Update Quest status
       await tx.run(`
         UPDATE quests
         SET status = 'completed', completed_at = CURRENT_TIMESTAMP
@@ -244,7 +238,6 @@ router.post('/:id/complete', async (req, res) => {
       `, [quest.id]);
 
       // Insert Items
-      // We loop sequentially to be safe in async txn
       for (const item of rewards.items) {
         await tx.run(`
           INSERT INTO items (id, name, description, rarity, type, obtained_at)
@@ -253,27 +246,28 @@ router.post('/:id/complete', async (req, res) => {
       }
     });
 
-    // Fetch updated user
+    // Fetch updated user for response
     const updatedUser = await User.getById(1);
 
     res.json({
       message: 'Quest completed!',
       xpGained,
-      levelUp: levelUpResult.leveledUp ? {
+      levelUp: xpResult.leveledUp ? {
         oldLevel: user.level,
-        newLevel: levelUpResult.newLevel,
-        levelsGained: levelUpResult.levelsGained,
-        statPointsGained: statPointsGained
+        newLevel: xpResult.newLevel,
+        levelsGained: xpResult.levelsGained,
+        statPointsGained: 0, // Automated now
+        statChanges: xpResult.statChanges
       } : null,
       rewards: {
         items: rewards.items,
-        special: rewards.special
+        special: specialRewards
       },
       user: {
-        level: levelUpResult.newLevel,
-        xp: levelUpResult.newXP,
-        totalXpEarned: user.total_xp_earned + xpGained,
-        stats: { // Return full stats for dashboard update
+        level: updatedUser.level,
+        xp: updatedUser.xp,
+        totalXpEarned: updatedUser.total_xp_earned,
+        stats: {
           strength: updatedUser.strength,
           creation: updatedUser.creation,
           network: updatedUser.network,

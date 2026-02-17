@@ -44,12 +44,12 @@ export class Quest {
    * Create new quest
    */
   static async create(questData) {
-    const { id, title, description, difficulty, xp_reward, due_date } = questData;
+    const { id, title, description, difficulty, xp_reward, due_date, attribute } = questData;
 
     return await db.run(`
-      INSERT INTO quests (id, title, description, difficulty, xp_reward, due_date, status)
-      VALUES (?, ?, ?, ?, ?, ?, 'active')
-    `, [id, title, description, difficulty, xp_reward, due_date || null]);
+      INSERT INTO quests (id, title, description, difficulty, xp_reward, due_date, status, attribute)
+      VALUES (?, ?, ?, ?, ?, ?, 'active', ?)
+    `, [id, title, description, difficulty, xp_reward, due_date || null, attribute || 'strength']);
   }
 
   /**
