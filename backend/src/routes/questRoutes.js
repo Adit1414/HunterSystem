@@ -208,6 +208,25 @@ router.post('/:id/complete', async (req, res) => {
     // Calculate XP with bonuses/penalties
     const xpGained = calculateQuestXP(quest, { completedOnTime, recentEasyQuests: recentCount });
 
+    // Update User Progress FIRST to determine level up / rewards
+    // We pass the quest attribute.
+    const xpResult = await User.addXp(user.id, xpGained, quest.attribute || 'strength');
+
+    // Generate special rewards from level up
+    const specialRewards = [];
+    if (xpResult.leveledUp) {
+      let lvl = user.level + 1;
+      for (let i = 0; i < xpResult.levelsGained; i++, lvl++) {
+        if (lvl % 10 === 0) specialRewards.push({ type: 'legendary_choice', message: `Level ${lvl} Milestone!` });
+        else if (lvl % 5 === 0) specialRewards.push({ type: 'guaranteed_rare', message: `Level ${lvl} Milestone!` });
+      }
+    }
+
+    // Generate Item Rewards (based on difficulty and if we leveled up)
+    // We reconstruct a partial `levelUpResult` to pass to `generateQuestRewards` if needed, 
+    // but `generateQuestRewards` mainly expects `rewards` array from levelUpResult.
+    const rewards = generateQuestRewards(quest.difficulty, specialRewards);
+
     // Start transaction
     await db.transaction(async (tx) => {
       // Update Quest status
@@ -216,27 +235,6 @@ router.post('/:id/complete', async (req, res) => {
         SET status = 'completed', completed_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `, [quest.id]);
-
-      // Add XP and handle leveling via User model
-      // Note: We need to do this OUTSIDE the transaction if User.addXp uses its own queries?
-      // No, `User.addXp` uses `db.run` which might not share the transaction context if we don't pass it.
-      // `db.transaction` in `database.js` passes a `tx` adapter.
-      // `User.addXp` is static and calls `db.run`.
-      // The current `database.js` implementation of `transaction` passes a `transactionAdapter`.
-      // But `User.addXp` imports the global `db`.
-      // To support transactions, we should pass `tx` to `User.addXp` or make `User.addXp` accept an optional db client.
-      // Since `User.addXp` is complex, let's keep it simple for now and run it AFTER the quest update.
-      // Or, we can modify `User` to accept a db instance.
-      // Given the `User` model structure, it uses the imported `db`.
-
-      // FIX: The `User` model uses the imported `db`. The `tx` is a separate adapter.
-      // If we use `User.addXp` inside this transaction, it will use the main connection (SQLite: checks lock? Postgres: separate client).
-      // SQLite WAL mode might handle it, but it's safer to use the transaction.
-      // However, refactoring User to accept TX is extra work.
-      // Since this is a single user app, concurrency is low. 
-      // We will update Quest first, then User. If User update fails, Quest is marked completed.
-      // Ideally we want atomic.
-      // For now, let's just insert items in the transaction.
 
       // Insert Items
       for (const item of rewards.items) {
@@ -247,30 +245,8 @@ router.post('/:id/complete', async (req, res) => {
       }
     });
 
-    // Update User Progress (outside transaction for now to use User.addXp)
-    // We pass the quest attribute.
-    const xpResult = await User.addXp(user.id, xpGained, quest.attribute || 'strength');
-
-    // Fetch updated user
+    // Fetch updated user for response
     const updatedUser = await User.getById(1);
-
-    // Merge rewards from level up (if any logic needed)
-    // The previous logic generated special rewards based on `levelUpResult`. 
-    // `User.addXp` returns `levelsGained`.
-    // We might have missed generating "Special Rewards" (Legendary Choice etc) in `User.addXp`.
-    // The original `questController` generated rewards based on `levelUpResult` from `progressionEngine`.
-    // `User.addXp` handles STATS, but not the return of "Rewards" objects?
-    // Let's re-generate the rewards notification based on the result.
-
-    // Re-calculating special rewards for notification
-    const specialRewards = [];
-    if (xpResult.leveledUp) {
-      let lvl = user.level + 1;
-      for (let i = 0; i < xpResult.levelsGained; i++, lvl++) {
-        if (lvl % 10 === 0) specialRewards.push({ type: 'legendary_choice', message: `Level ${lvl} Milestone!` });
-        else if (lvl % 5 === 0) specialRewards.push({ type: 'guaranteed_rare', message: `Level ${lvl} Milestone!` });
-      }
-    }
 
     res.json({
       message: 'Quest completed!',
@@ -300,11 +276,13 @@ router.post('/:id/complete', async (req, res) => {
         }
       }
     });
+  }
+    });
 
   } catch (error) {
-    console.error('Error completing quest:', error);
-    res.status(500).json({ error: 'Failed to complete quest' });
-  }
+  console.error('Error completing quest:', error);
+  res.status(500).json({ error: 'Failed to complete quest' });
+}
 });
 
 /**
