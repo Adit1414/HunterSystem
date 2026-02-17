@@ -47,8 +47,8 @@ router.get('/', async (req, res) => {
         createdAt: user.created_at,
         stats: {
           strength: user.strength || 10,
-          agility: user.agility || 10,
-          sense: user.sense || 10,
+          creation: user.creation || 10,
+          network: user.network || 10,
           vitality: user.vitality || 10,
           intelligence: user.intelligence || 10,
           statPoints: user.stat_points || 0
@@ -72,10 +72,10 @@ router.get('/', async (req, res) => {
  */
 router.post('/stats', async (req, res) => {
   try {
-    const { strength, agility, sense, vitality, intelligence } = req.body;
+    const { strength, creation, network, vitality, intelligence } = req.body;
 
     // Calculate total points to spend
-    const pointsToSpend = (strength || 0) + (agility || 0) + (sense || 0) + (vitality || 0) + (intelligence || 0);
+    const pointsToSpend = (strength || 0) + (creation || 0) + (network || 0) + (vitality || 0) + (intelligence || 0);
 
     if (pointsToSpend <= 0) {
       return res.status(400).json({ error: 'No points specified' });
@@ -92,8 +92,8 @@ router.post('/stats', async (req, res) => {
       await tx.run(`
         UPDATE users
         SET strength = strength + ?,
-            agility = agility + ?,
-            sense = sense + ?,
+            creation = creation + ?,
+            network = network + ?,
             vitality = vitality + ?,
             intelligence = intelligence + ?,
             stat_points = stat_points - ?,
@@ -101,8 +101,8 @@ router.post('/stats', async (req, res) => {
         WHERE id = 1
       `, [
         strength || 0,
-        agility || 0,
-        sense || 0,
+        creation || 0,
+        network || 0,
         vitality || 0,
         intelligence || 0,
         pointsToSpend
@@ -116,8 +116,8 @@ router.post('/stats', async (req, res) => {
       user: {
         stats: {
           strength: updatedUser.strength,
-          agility: updatedUser.agility,
-          sense: updatedUser.sense,
+          creation: updatedUser.creation,
+          network: updatedUser.network,
           vitality: updatedUser.vitality,
           intelligence: updatedUser.intelligence,
           statPoints: updatedUser.stat_points
@@ -147,7 +147,7 @@ router.post('/reset', async (req, res) => {
       await tx.run(`
         UPDATE users 
         SET level = 1, xp = 0, total_xp_earned = 0,
-            strength = 10, agility = 10, sense = 10, vitality = 10, intelligence = 10,
+            strength = 10, creation = 10, network = 10, vitality = 10, intelligence = 10,
             stat_points = 0,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = 1

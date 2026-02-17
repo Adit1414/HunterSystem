@@ -67,7 +67,7 @@ const DESCRIPTION_TEMPLATES = {
       'Preferred by B-rank hunters for its reliability.'
     ],
     epic: [
-      'Radiates a faint magical aura visible to those with high Sense.',
+      'Radiates a faint magical aura visible to those with high Intelligence.',
       'Crafted from monster bones and reinforced with magic.',
       'A weapon that has tasted the blood of high-ranking beasts.',
       'Vibrates with energy, longing for battle.'

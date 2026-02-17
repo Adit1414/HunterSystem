@@ -275,8 +275,8 @@ router.post('/:id/complete', async (req, res) => {
         totalXpEarned: user.total_xp_earned + xpGained,
         stats: { // Return full stats for dashboard update
           strength: updatedUser.strength,
-          agility: updatedUser.agility,
-          sense: updatedUser.sense,
+          creation: updatedUser.creation,
+          network: updatedUser.network,
           vitality: updatedUser.vitality,
           intelligence: updatedUser.intelligence,
           statPoints: updatedUser.stat_points
