@@ -63,7 +63,7 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { title, description, difficulty, dueDate } = req.body;
+    const { title, description, difficulty, dueDate, attribute } = req.body;
 
     // Validation
     if (!title || !difficulty) {
@@ -93,7 +93,8 @@ router.post('/', async (req, res) => {
       description: finalDescription,
       difficulty,
       xp_reward: xpReward,
-      due_date: dueDate
+      due_date: dueDate,
+      attribute: attribute || 'strength'
     });
 
     const quest = await Quest.getById(questId);
