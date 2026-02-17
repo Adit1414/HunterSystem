@@ -274,15 +274,12 @@ router.post('/:id/complete', async (req, res) => {
           intelligence: updatedUser.intelligence,
           statPoints: updatedUser.stat_points
         }
-      }
-    });
-  }
-    });
+      });
 
   } catch (error) {
-  console.error('Error completing quest:', error);
-  res.status(500).json({ error: 'Failed to complete quest' });
-}
+    console.error('Error completing quest:', error);
+    res.status(500).json({ error: 'Failed to complete quest' });
+  }
 });
 
 /**
