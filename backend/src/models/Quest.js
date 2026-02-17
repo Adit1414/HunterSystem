@@ -106,13 +106,24 @@ export class Quest {
    * Get recent E-rank quests (for anti-grind)
    */
   static async getRecentEasyQuests() {
-    return await db.get(`
+    if (db.type === 'postgres') {
+      return await db.get(`
+        SELECT COUNT(*) as count 
+        FROM quests 
+        WHERE difficulty = 'E' 
+        AND status = 'completed'
+        AND completed_at > NOW() - INTERVAL '1 day'
+      `);
+    } else {
+      // SQLite
+      return await db.get(`
       SELECT COUNT(*) as count 
       FROM quests 
       WHERE difficulty = 'E' 
       AND status = 'completed'
       AND completed_at > datetime('now', '-24 hours')
     `);
+    }
   }
 }
 
