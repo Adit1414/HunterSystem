@@ -285,7 +285,6 @@ router.post('/:id/complete', async (req, res) => {
     });
 
   } catch (error) {
-  } catch (error) {
     console.error('Error completing quest:', error);
     res.status(500).json({ error: 'Failed to complete quest' });
   }

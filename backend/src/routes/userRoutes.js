@@ -170,7 +170,6 @@ router.post('/reset', async (req, res) => {
     });
 
   } catch (error) {
-  } catch (error) {
     console.error('Error resetting progress:', error);
     res.status(500).json({ error: 'Failed to reset progress' });
   }
