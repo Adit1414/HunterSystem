@@ -274,6 +274,49 @@ export async function initializeDatabase() {
     }
     // -------------------------
 
+    // --- MIGRATIONS FOR ATTRIBUTE XP ---
+    try {
+      if (db.type === 'postgres') {
+        await db.exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS xp_strength INTEGER DEFAULT 0`);
+        await db.exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS xp_creation INTEGER DEFAULT 0`);
+        await db.exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS xp_network INTEGER DEFAULT 0`);
+        await db.exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS xp_vitality INTEGER DEFAULT 0`);
+        await db.exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS xp_intelligence INTEGER DEFAULT 0`);
+        await db.exec(`ALTER TABLE quests ADD COLUMN IF NOT EXISTS attribute TEXT DEFAULT 'strength'`);
+      } else {
+        const columns = await db.query("PRAGMA table_info(users)");
+        if (!columns.some(col => col.name === 'xp_strength')) {
+          console.log('Migrating: Adding xp_strength...');
+          await db.exec("ALTER TABLE users ADD COLUMN xp_strength INTEGER DEFAULT 0");
+        }
+        if (!columns.some(col => col.name === 'xp_creation')) {
+          console.log('Migrating: Adding xp_creation...');
+          await db.exec("ALTER TABLE users ADD COLUMN xp_creation INTEGER DEFAULT 0");
+        }
+        if (!columns.some(col => col.name === 'xp_network')) {
+          console.log('Migrating: Adding xp_network...');
+          await db.exec("ALTER TABLE users ADD COLUMN xp_network INTEGER DEFAULT 0");
+        }
+        if (!columns.some(col => col.name === 'xp_vitality')) {
+          console.log('Migrating: Adding xp_vitality...');
+          await db.exec("ALTER TABLE users ADD COLUMN xp_vitality INTEGER DEFAULT 0");
+        }
+        if (!columns.some(col => col.name === 'xp_intelligence')) {
+          console.log('Migrating: Adding xp_intelligence...');
+          await db.exec("ALTER TABLE users ADD COLUMN xp_intelligence INTEGER DEFAULT 0");
+        }
+
+        const questColumns = await db.query("PRAGMA table_info(quests)");
+        if (!questColumns.some(col => col.name === 'attribute')) {
+          console.log('Migrating: Adding attribute to quests...');
+          await db.exec("ALTER TABLE quests ADD COLUMN attribute TEXT DEFAULT 'strength'");
+        }
+      }
+    } catch (err) {
+      console.error('Migration Error (Attribute XP):', err.message);
+    }
+    // -----------------------------------
+
     console.log('✓ Database initialized successfully');
   }
   catch (error) {
