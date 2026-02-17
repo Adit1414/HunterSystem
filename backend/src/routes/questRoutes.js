@@ -6,6 +6,9 @@
 import express from 'express';
 import { randomUUID } from 'crypto';
 import db from '../config/database.js';
+import Quest from '../models/Quest.js';
+import User from '../models/User.js';
+import Item from '../models/Item.js';
 import {
   calculateQuestXP,
   processLevelUp
@@ -19,31 +22,12 @@ const router = express.Router();
  * GET /api/quests
  * Get all quests with optional filtering
  */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { status, difficulty } = req.query;
 
-    let query = 'SELECT * FROM quests';
-    const conditions = [];
-    const params = [];
-
-    if (status) {
-      conditions.push('status = ?');
-      params.push(status);
-    }
-
-    if (difficulty) {
-      conditions.push('difficulty = ?');
-      params.push(difficulty);
-    }
-
-    if (conditions.length > 0) {
-      query += ' WHERE ' + conditions.join(' AND ');
-    }
-
-    query += ' ORDER BY created_at DESC';
-
-    const quests = db.prepare(query).all(...params);
+    // Use Quest model
+    const quests = await Quest.getAll({ status, difficulty });
 
     res.json({ quests });
 
@@ -57,9 +41,9 @@ router.get('/', (req, res) => {
  * GET /api/quests/:id
  * Get single quest by ID
  */
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const quest = db.prepare('SELECT * FROM quests WHERE id = ?').get(req.params.id);
+    const quest = await Quest.getById(req.params.id);
 
     if (!quest) {
       return res.status(404).json({ error: 'Quest not found' });
@@ -103,12 +87,16 @@ router.post('/', async (req, res) => {
 
     const questId = randomUUID();
 
-    db.prepare(`
-      INSERT INTO quests (id, title, description, difficulty, xp_reward, due_date, status)
-      VALUES (?, ?, ?, ?, ?, ?, 'active')
-    `).run(questId, title, finalDescription, difficulty, xpReward, dueDate || null);
+    await Quest.create({
+      id: questId,
+      title,
+      description: finalDescription,
+      difficulty,
+      xp_reward: xpReward,
+      due_date: dueDate
+    });
 
-    const quest = db.prepare('SELECT * FROM quests WHERE id = ?').get(questId);
+    const quest = await Quest.getById(questId);
 
     res.status(201).json({ quest });
 
@@ -122,11 +110,11 @@ router.post('/', async (req, res) => {
  * PUT /api/quests/:id
  * Update existing quest
  */
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { title, description, difficulty, dueDate, status } = req.body;
 
-    const quest = db.prepare('SELECT * FROM quests WHERE id = ?').get(req.params.id);
+    const quest = await Quest.getById(req.params.id);
     if (!quest) {
       return res.status(404).json({ error: 'Quest not found' });
     }
@@ -136,49 +124,28 @@ router.put('/:id', (req, res) => {
       return res.status(400).json({ error: 'Cannot edit completed or failed quests' });
     }
 
-    // Build update query dynamically
-    const updates = [];
-    const params = [];
+    const updates = {};
+    if (title !== undefined) updates.title = title;
+    if (description !== undefined) updates.description = description;
+    if (dueDate !== undefined) updates.due_date = dueDate;
 
-    if (title !== undefined) {
-      updates.push('title = ?');
-      params.push(title);
-    }
-    if (description !== undefined) {
-      updates.push('description = ?');
-      params.push(description);
-    }
     if (difficulty !== undefined) {
       const validDifficulties = ['E', 'D', 'C', 'B', 'A', 'S'];
       if (!validDifficulties.includes(difficulty)) {
         return res.status(400).json({ error: 'Invalid difficulty level' });
       }
-      updates.push('difficulty = ?');
-      params.push(difficulty);
-
-      // Recalculate XP reward
+      updates.difficulty = difficulty;
       const xpRewards = { 'E': 50, 'D': 100, 'C': 200, 'B': 400, 'A': 800, 'S': 1600 };
-      updates.push('xp_reward = ?');
-      params.push(xpRewards[difficulty]);
-    }
-    if (dueDate !== undefined) {
-      updates.push('due_date = ?');
-      params.push(dueDate);
+      updates.xp_reward = xpRewards[difficulty];
     }
 
-    if (updates.length === 0) {
+    if (Object.keys(updates).length === 0) {
       return res.status(400).json({ error: 'No fields to update' });
     }
 
-    params.push(req.params.id);
+    await Quest.update(req.params.id, updates);
 
-    db.prepare(`
-      UPDATE quests 
-      SET ${updates.join(', ')}
-      WHERE id = ?
-    `).run(...params);
-
-    const updatedQuest = db.prepare('SELECT * FROM quests WHERE id = ?').get(req.params.id);
+    const updatedQuest = await Quest.getById(req.params.id);
 
     res.json({ quest: updatedQuest });
 
@@ -192,15 +159,15 @@ router.put('/:id', (req, res) => {
  * DELETE /api/quests/:id
  * Delete quest
  */
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    const quest = db.prepare('SELECT * FROM quests WHERE id = ?').get(req.params.id);
+    const quest = await Quest.getById(req.params.id);
 
     if (!quest) {
       return res.status(404).json({ error: 'Quest not found' });
     }
 
-    db.prepare('DELETE FROM quests WHERE id = ?').run(req.params.id);
+    await Quest.delete(req.params.id);
 
     res.json({ message: 'Quest deleted successfully' });
 
@@ -214,9 +181,9 @@ router.delete('/:id', (req, res) => {
  * POST /api/quests/:id/complete
  * Complete a quest - awards XP, items, handles level ups
  */
-router.post('/:id/complete', (req, res) => {
+router.post('/:id/complete', async (req, res) => {
   try {
-    const quest = db.prepare('SELECT * FROM quests WHERE id = ?').get(req.params.id);
+    const quest = await Quest.getById(req.params.id);
 
     if (!quest) {
       return res.status(404).json({ error: 'Quest not found' });
@@ -227,7 +194,7 @@ router.post('/:id/complete', (req, res) => {
     }
 
     // Get current user
-    const user = db.prepare('SELECT * FROM users WHERE id = 1').get();
+    const user = await User.getById(1);
 
     // Check if completed on time
     const completedOnTime = quest.due_date
@@ -235,16 +202,11 @@ router.post('/:id/complete', (req, res) => {
       : false;
 
     // Check recent E-rank quest spam (anti-grind)
-    const recentEasyQuests = db.prepare(`
-      SELECT COUNT(*) as count 
-      FROM quests 
-      WHERE difficulty = 'E' 
-      AND status = 'completed'
-      AND completed_at > datetime('now', '-24 hours')
-    `).get().count;
+    const recentEasyQuests = await Quest.getRecentEasyQuests();
+    const recentCount = recentEasyQuests ? recentEasyQuests.count : 0;
 
     // Calculate XP with bonuses/penalties
-    const xpGained = calculateQuestXP(quest, { completedOnTime, recentEasyQuests });
+    const xpGained = calculateQuestXP(quest, { completedOnTime, recentEasyQuests: recentCount });
 
     // Process potential level up
     const levelUpResult = processLevelUp(user.level, user.xp, xpGained);
@@ -258,46 +220,45 @@ router.post('/:id/complete', (req, res) => {
       statPointsGained = levelUpResult.levelsGained * 5;
     }
 
-    // Start transaction
-    const updateUser = db.prepare(`
-      UPDATE users 
-      SET level = ?, xp = ?, total_xp_earned = total_xp_earned + ?, 
-          stat_points = stat_points + ?,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = 1
-    `);
+    // Start transaction (Manual)
+    try {
+      await db.exec('BEGIN');
 
-    const updateQuest = db.prepare(`
-      UPDATE quests
-      SET status = 'completed', completed_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `);
-
-    const insertItem = db.prepare(`
-      INSERT INTO items (id, name, description, rarity, type, obtained_at)
-      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    `);
-
-    // Execute transaction
-    const transaction = db.transaction(() => {
-      updateUser.run(
+      // Update User
+      await db.run(`
+        UPDATE users 
+        SET level = ?, xp = ?, total_xp_earned = total_xp_earned + ?, 
+            stat_points = stat_points + ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = 1
+      `, [
         levelUpResult.newLevel,
         levelUpResult.newXP,
         xpGained,
         statPointsGained
-      );
-      updateQuest.run(quest.id);
+      ]);
 
-      // Add items to inventory
+      // Update Quest
+      await db.run(`
+        UPDATE quests
+        SET status = 'completed', completed_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `, [quest.id]);
+
+      // Insert Items
+      // We loop sequentially to be safe in async txn
       for (const item of rewards.items) {
-        insertItem.run(item.id, item.name, item.description, item.rarity, item.type);
+        await Item.create(item);
       }
-    });
 
-    transaction();
+      await db.exec('COMMIT');
+    } catch (err) {
+      await db.exec('ROLLBACK');
+      throw err;
+    }
 
-    // Fetch updated user to return absolute values if needed, but we return relative for modal
-    const updatedUser = db.prepare('SELECT * FROM users WHERE id = 1').get();
+    // Fetch updated user
+    const updatedUser = await User.getById(1);
 
     res.json({
       message: 'Quest completed!',
@@ -306,7 +267,7 @@ router.post('/:id/complete', (req, res) => {
         oldLevel: user.level,
         newLevel: levelUpResult.newLevel,
         levelsGained: levelUpResult.levelsGained,
-        statPointsGained: statPointsGained // Passing points gained
+        statPointsGained: statPointsGained
       } : null,
       rewards: {
         items: rewards.items,
@@ -328,6 +289,7 @@ router.post('/:id/complete', (req, res) => {
     });
 
   } catch (error) {
+    if (db.exec) await db.exec('ROLLBACK').catch(() => { });
     console.error('Error completing quest:', error);
     res.status(500).json({ error: 'Failed to complete quest' });
   }
@@ -337,9 +299,9 @@ router.post('/:id/complete', (req, res) => {
  * POST /api/quests/:id/fail
  * Mark quest as failed
  */
-router.post('/:id/fail', (req, res) => {
+router.post('/:id/fail', async (req, res) => {
   try {
-    const quest = db.prepare('SELECT * FROM quests WHERE id = ?').get(req.params.id);
+    const quest = await Quest.getById(req.params.id);
 
     if (!quest) {
       return res.status(404).json({ error: 'Quest not found' });
@@ -349,11 +311,7 @@ router.post('/:id/fail', (req, res) => {
       return res.status(400).json({ error: 'Quest is not active' });
     }
 
-    db.prepare(`
-      UPDATE quests
-      SET status = 'failed', completed_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(quest.id);
+    await Quest.fail(quest.id);
 
     res.json({ message: 'Quest failed' });
 

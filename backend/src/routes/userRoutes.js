@@ -5,6 +5,7 @@
 
 import express from 'express';
 import db from '../config/database.js';
+import User from '../models/User.js';
 import {
   getXPForNextLevel,
   getRankName,
@@ -17,9 +18,10 @@ const router = express.Router();
  * GET /api/user
  * Get current user progress and stats
  */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const user = db.prepare('SELECT * FROM users WHERE id = 1').get();
+    // Use User model
+    const user = await User.getById(1);
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -30,27 +32,8 @@ router.get('/', (req, res) => {
     const progressPercentage = getProgressToNextLevel(user.xp, user.level);
     const rankName = getRankName(user.level);
 
-    // Quest statistics
-    const questStats = db.prepare(`
-      SELECT 
-        COUNT(*) as total,
-        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
-        SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
-        SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed
-      FROM quests
-    `).get();
-
-    // Item count by rarity
-    const itemStats = db.prepare(`
-      SELECT 
-        COUNT(*) as total,
-        SUM(CASE WHEN rarity = 'mythic' THEN 1 ELSE 0 END) as mythic,
-        SUM(CASE WHEN rarity = 'legendary' THEN 1 ELSE 0 END) as legendary,
-        SUM(CASE WHEN rarity = 'epic' THEN 1 ELSE 0 END) as epic,
-        SUM(CASE WHEN rarity = 'rare' THEN 1 ELSE 0 END) as rare,
-        SUM(CASE WHEN rarity = 'common' THEN 1 ELSE 0 END) as common
-      FROM items
-    `).get();
+    // Get stats from User model
+    const stats = await User.getStats(1);
 
     res.json({
       user: {
@@ -72,8 +55,8 @@ router.get('/', (req, res) => {
         }
       },
       stats: {
-        quests: questStats,
-        items: itemStats
+        quests: stats.quests,
+        items: stats.items
       }
     });
 
@@ -87,7 +70,7 @@ router.get('/', (req, res) => {
  * POST /api/user/stats
  * Allocate stat points
  */
-router.post('/stats', (req, res) => {
+router.post('/stats', async (req, res) => {
   try {
     const { strength, agility, sense, vitality, intelligence } = req.body;
 
@@ -98,35 +81,42 @@ router.post('/stats', (req, res) => {
       return res.status(400).json({ error: 'No points specified' });
     }
 
-    const user = db.prepare('SELECT * FROM users WHERE id = 1').get();
+    const user = await User.getById(1);
 
     if (user.stat_points < pointsToSpend) {
       return res.status(400).json({ error: 'Not enough stat points' });
     }
 
-    // Update stats using transaction
-    const updateStats = db.prepare(`
-      UPDATE users
-      SET strength = strength + ?,
-          agility = agility + ?,
-          sense = sense + ?,
-          vitality = vitality + ?,
-          intelligence = intelligence + ?,
-          stat_points = stat_points - ?,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = 1
-    `);
+    // Update stats using transaction pattern (manual)
+    try {
+      await db.exec('BEGIN');
 
-    updateStats.run(
-      strength || 0,
-      agility || 0,
-      sense || 0,
-      vitality || 0,
-      intelligence || 0,
-      pointsToSpend
-    );
+      await db.run(`
+        UPDATE users
+        SET strength = strength + ?,
+            agility = agility + ?,
+            sense = sense + ?,
+            vitality = vitality + ?,
+            intelligence = intelligence + ?,
+            stat_points = stat_points - ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = 1
+      `, [
+        strength || 0,
+        agility || 0,
+        sense || 0,
+        vitality || 0,
+        intelligence || 0,
+        pointsToSpend
+      ]);
 
-    const updatedUser = db.prepare('SELECT * FROM users WHERE id = 1').get();
+      await db.exec('COMMIT');
+    } catch (err) {
+      await db.exec('ROLLBACK');
+      throw err;
+    }
+
+    const updatedUser = await User.getById(1);
 
     res.json({
       message: 'Stats updated',
@@ -152,23 +142,20 @@ router.post('/stats', (req, res) => {
  * POST /api/user/reset
  * Reset all progress (for testing or fresh start)
  */
-router.post('/reset', (req, res) => {
+router.post('/reset', async (req, res) => {
   try {
+    await db.exec('BEGIN');
+
     // Reset user progress
-    db.prepare(`
-      UPDATE users 
-      SET level = 1, xp = 0, total_xp_earned = 0,
-          strength = 10, agility = 10, sense = 10, vitality = 10, intelligence = 10,
-          stat_points = 0,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = 1
-    `).run();
+    await User.reset(1);
 
     // Delete all quests
-    db.prepare('DELETE FROM quests').run();
+    await db.run('DELETE FROM quests');
 
     // Delete all items
-    db.prepare('DELETE FROM items').run();
+    await db.run('DELETE FROM items');
+
+    await db.exec('COMMIT');
 
     res.json({
       message: 'Progress reset successfully',
@@ -180,6 +167,7 @@ router.post('/reset', (req, res) => {
     });
 
   } catch (error) {
+    if (db.exec) await db.exec('ROLLBACK').catch(() => { });
     console.error('Error resetting progress:', error);
     res.status(500).json({ error: 'Failed to reset progress' });
   }
@@ -187,14 +175,21 @@ router.post('/reset', (req, res) => {
 
 /**
  * GET /api/user/achievements
- * Get achievement progress (future feature)
+ * Get achievement progress
  */
-router.get('/achievements', (req, res) => {
+router.get('/achievements', async (req, res) => {
   try {
-    const user = db.prepare('SELECT * FROM users WHERE id = 1').get();
-    const questCount = db.prepare('SELECT COUNT(*) as count FROM quests WHERE status = "completed"').get();
-    const itemCount = db.prepare('SELECT COUNT(*) as count FROM items').get();
-    const legendaryCount = db.prepare('SELECT COUNT(*) as count FROM items WHERE rarity = "legendary" OR rarity = "mythic"').get();
+    const user = await User.getById(1);
+
+    // Custom counts not in User model yet
+    const questCount = await db.get('SELECT COUNT(*) as count FROM quests WHERE status = ?', ['completed']);
+    const itemCount = await db.get('SELECT COUNT(*) as count FROM items');
+    // For IN clause or OR, we can use simple SQL
+    const legendaryCount = await db.get(`
+      SELECT COUNT(*) as count 
+      FROM items 
+      WHERE rarity = 'legendary' OR rarity = 'mythic'
+    `);
 
     // Define achievements
     const achievements = [

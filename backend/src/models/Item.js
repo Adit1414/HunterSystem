@@ -9,7 +9,7 @@ export class Item {
   /**
    * Get all items
    */
-  static getAll(filters = {}) {
+  static async getAll(filters = {}) {
     let query = 'SELECT * FROM items';
     const conditions = [];
     const params = [];
@@ -39,40 +39,40 @@ export class Item {
       END DESC,
       obtained_at DESC`;
 
-    return db.prepare(query).all(...params);
+    return await db.query(query, params);
   }
 
   /**
    * Get item by ID
    */
-  static getById(id) {
-    return db.prepare('SELECT * FROM items WHERE id = ?').get(id);
+  static async getById(id) {
+    return await db.get('SELECT * FROM items WHERE id = ?', [id]);
   }
 
   /**
    * Create new item
    */
-  static create(itemData) {
+  static async create(itemData) {
     const { id, name, description, rarity, type } = itemData;
-    
-    return db.prepare(`
+
+    return await db.run(`
       INSERT INTO items (id, name, description, rarity, type, obtained_at)
       VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    `).run(id, name, description, rarity, type);
+    `, [id, name, description, rarity, type]);
   }
 
   /**
    * Delete item
    */
-  static delete(id) {
-    return db.prepare('DELETE FROM items WHERE id = ?').run(id);
+  static async delete(id) {
+    return await db.run('DELETE FROM items WHERE id = ?', [id]);
   }
 
   /**
    * Get item statistics
    */
-  static getStats() {
-    const overall = db.prepare(`
+  static async getStats() {
+    const overall = await db.get(`
       SELECT 
         COUNT(*) as total,
         COUNT(DISTINCT type) as uniqueTypes,
@@ -82,20 +82,20 @@ export class Item {
         SUM(CASE WHEN rarity = 'rare' THEN 1 ELSE 0 END) as rare,
         SUM(CASE WHEN rarity = 'common' THEN 1 ELSE 0 END) as common
       FROM items
-    `).get();
+    `);
 
-    const byType = db.prepare(`
+    const byType = await db.query(`
       SELECT type, COUNT(*) as count
       FROM items
       GROUP BY type
       ORDER BY count DESC
-    `).all();
+    `);
 
-    const recentItems = db.prepare(`
+    const recentItems = await db.query(`
       SELECT * FROM items
       ORDER BY obtained_at DESC
       LIMIT 5
-    `).all();
+    `);
 
     return { overall, byType, recentItems };
   }
@@ -103,15 +103,15 @@ export class Item {
   /**
    * Get items by rarity
    */
-  static getByRarity(rarity) {
-    return db.prepare('SELECT * FROM items WHERE rarity = ?').all(rarity);
+  static async getByRarity(rarity) {
+    return await db.query('SELECT * FROM items WHERE rarity = ?', [rarity]);
   }
 
   /**
    * Get items by type
    */
-  static getByType(type) {
-    return db.prepare('SELECT * FROM items WHERE type = ?').all(type);
+  static async getByType(type) {
+    return await db.query('SELECT * FROM items WHERE type = ?', [type]);
   }
 }
 

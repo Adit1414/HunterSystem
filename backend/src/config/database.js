@@ -2,58 +2,141 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import pg from 'pg';
+import dotenv from 'dotenv';
+import { promisify } from 'util';
+
+dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbPath = path.join(__dirname, '../../database/hunter.db');
 
-// Ensure database directory exists
-const dbDir = path.dirname(dbPath);
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
-}
+class DBAdapter {
+  constructor() {
+    this.type = process.env.DATABASE_URL ? 'postgres' : 'sqlite';
+    this.pool = null;
+    this.sqlite = null;
 
-// Initialize database connection
-const db = new Database(dbPath);
-db.pragma('journal_mode = WAL'); // Better performance for concurrent reads
+    if (this.type === 'postgres') {
+      console.log('🔌 Connecting to PostgreSQL...');
+      this.pool = new pg.Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: {
+          rejectUnauthorized: false
+        }
+      });
+    } else {
+      console.log('🔌 Connecting to SQLite (Local)...');
+      const dbPath = path.join(__dirname, '../../database/hunter.db');
+      const dbDir = path.dirname(dbPath);
+      if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
 
-/**
- * Initialize database schema
- * Creates tables if they don't exist
- */
-export function initializeDatabase() {
-  // Users table - stores player progress
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      level INTEGER DEFAULT 1,
-      xp INTEGER DEFAULT 0,
-      total_xp_earned INTEGER DEFAULT 0,
-      strength INTEGER DEFAULT 10,
-      agility INTEGER DEFAULT 10,
-      sense INTEGER DEFAULT 10,
-      vitality INTEGER DEFAULT 10,
-      intelligence INTEGER DEFAULT 10,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  // Migration: Add columns if they don't exist (for existing databases)
-  try {
-    const columns = db.pragma('table_info(users)');
-    const columnNames = columns.map(c => c.name);
-
-    if (!columnNames.includes('strength')) db.prepare('ALTER TABLE users ADD COLUMN strength INTEGER DEFAULT 10').run();
-    if (!columnNames.includes('agility')) db.prepare('ALTER TABLE users ADD COLUMN agility INTEGER DEFAULT 10').run();
-    if (!columnNames.includes('sense')) db.prepare('ALTER TABLE users ADD COLUMN sense INTEGER DEFAULT 10').run();
-    if (!columnNames.includes('vitality')) db.prepare('ALTER TABLE users ADD COLUMN vitality INTEGER DEFAULT 10').run();
-    if (!columnNames.includes('intelligence')) db.prepare('ALTER TABLE users ADD COLUMN intelligence INTEGER DEFAULT 10').run();
-  } catch (error) {
-    console.error('Migration error:', error);
+      this.sqlite = new Database(dbPath);
+      this.sqlite.pragma('journal_mode = WAL');
+    }
   }
 
-  // Quests table - stores all quests (active, completed, failed)
-  db.exec(`
+  async query(sql, params = []) {
+    if (this.type === 'postgres') {
+      let pgSql = sql;
+      let paramCount = 1;
+      while (pgSql.includes('?')) {
+        pgSql = pgSql.replace('?', `$${paramCount++}`);
+      }
+      try {
+        const res = await this.pool.query(pgSql, params);
+        return res.rows;
+      } catch (err) {
+        console.error('PG Query Error:', err);
+        throw err;
+      }
+    } else {
+      return this.sqlite.prepare(sql).all(params);
+    }
+  }
+
+  async get(sql, params = []) {
+    const rows = await this.query(sql, params);
+    return rows[0];
+  }
+
+  async run(sql, params = []) {
+    if (this.type === 'postgres') {
+      let pgSql = sql;
+      let paramCount = 1;
+      while (pgSql.includes('?')) {
+        pgSql = pgSql.replace('?', `$${paramCount++}`);
+      }
+      try {
+        const res = await this.pool.query(pgSql, params);
+        // Postgres result doesn't imply exact changes in same way, but rowCount is key
+        return { changes: res.rowCount, lastInsertRowid: null };
+      } catch (err) {
+        console.error('PG Run Error:', err);
+        throw err;
+      }
+    } else {
+      return this.sqlite.prepare(sql).run(params);
+    }
+  }
+
+  async exec(sql) {
+    if (this.type === 'postgres') {
+      await this.pool.query(sql);
+    } else {
+      this.sqlite.exec(sql);
+    }
+  }
+}
+
+const db = new DBAdapter();
+
+export async function initializeDatabase() {
+  console.log(`Initializing ${db.type} database...`);
+
+  if (db.type === 'postgres') {
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        level INTEGER DEFAULT 1,
+        xp INTEGER DEFAULT 0,
+        total_xp_earned INTEGER DEFAULT 0,
+        strength INTEGER DEFAULT 10,
+        agility INTEGER DEFAULT 10,
+        sense INTEGER DEFAULT 10,
+        vitality INTEGER DEFAULT 10,
+        intelligence INTEGER DEFAULT 10,
+        creation INTEGER DEFAULT 10,
+        network INTEGER DEFAULT 10,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+  } else {
+    // SQLite Schema
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        level INTEGER DEFAULT 1,
+        xp INTEGER DEFAULT 0,
+        total_xp_earned INTEGER DEFAULT 0,
+        strength INTEGER DEFAULT 10,
+        agility INTEGER DEFAULT 10,
+        sense INTEGER DEFAULT 10,
+        vitality INTEGER DEFAULT 10,
+        intelligence INTEGER DEFAULT 10,
+        creation INTEGER DEFAULT 10,
+        network INTEGER DEFAULT 10,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+  }
+
+  // Quests & Items (Unified simply for now, check syntax diffs if any)
+  // SQLite uses TEXT for id usually if UUID, PG can use TEXT or UUID. 
+  // Let's use TEXT for compatibility.
+
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS quests (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
@@ -62,40 +145,22 @@ export function initializeDatabase() {
       xp_reward INTEGER NOT NULL,
       gold_reward INTEGER DEFAULT 0,
       status TEXT DEFAULT 'active' CHECK(status IN ('active', 'completed', 'failed')),
-      due_date DATETIME,
-      completed_at DATETIME,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
+      due_date TIMESTAMP,
+      completed_at TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
-  // Items table - stores inventory items
-  db.exec(`
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS items (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       description TEXT,
       rarity TEXT NOT NULL CHECK(rarity IN ('common', 'rare', 'epic', 'legendary', 'mythic')),
       type TEXT NOT NULL CHECK(type IN ('weapon', 'armor', 'accessory', 'consumable')),
-      obtained_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
+      obtained_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
   `);
-
-  // Create indexes for performance
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_quests_status ON quests(status);
-    CREATE INDEX IF NOT EXISTS idx_quests_difficulty ON quests(difficulty);
-    CREATE INDEX IF NOT EXISTS idx_items_rarity ON items(rarity);
-  `);
-
-  // Initialize default user if none exists
-  const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get();
-  if (userCount.count === 0) {
-    db.prepare(`
-      INSERT INTO users (level, xp, total_xp_earned) 
-      VALUES (1, 0, 0)
-    `).run();
-    console.log('✓ Default user created');
-  }
 
   console.log('✓ Database initialized successfully');
 }

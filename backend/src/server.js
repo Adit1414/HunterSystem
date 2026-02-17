@@ -84,7 +84,7 @@ async function startServer() {
   try {
     // Initialize database
     console.log('Initializing database...');
-    initializeDatabase();
+    await initializeDatabase();
 
     // Initialize AI (optional)
     console.log('Checking AI availability...');

@@ -9,7 +9,7 @@ export class Quest {
   /**
    * Get all quests
    */
-  static getAll(filters = {}) {
+  static async getAll(filters = {}) {
     let query = 'SELECT * FROM quests';
     const conditions = [];
     const params = [];
@@ -30,32 +30,32 @@ export class Quest {
 
     query += ' ORDER BY created_at DESC';
 
-    return db.prepare(query).all(...params);
+    return await db.query(query, params);
   }
 
   /**
    * Get quest by ID
    */
-  static getById(id) {
-    return db.prepare('SELECT * FROM quests WHERE id = ?').get(id);
+  static async getById(id) {
+    return await db.get('SELECT * FROM quests WHERE id = ?', [id]);
   }
 
   /**
    * Create new quest
    */
-  static create(questData) {
+  static async create(questData) {
     const { id, title, description, difficulty, xp_reward, due_date } = questData;
-    
-    return db.prepare(`
+
+    return await db.run(`
       INSERT INTO quests (id, title, description, difficulty, xp_reward, due_date, status)
       VALUES (?, ?, ?, ?, ?, ?, 'active')
-    `).run(id, title, description, difficulty, xp_reward, due_date || null);
+    `, [id, title, description, difficulty, xp_reward, due_date || null]);
   }
 
   /**
    * Update quest
    */
-  static update(id, updates) {
+  static async update(id, updates) {
     const fields = [];
     const params = [];
 
@@ -66,53 +66,53 @@ export class Quest {
 
     params.push(id);
 
-    return db.prepare(`
+    return await db.run(`
       UPDATE quests 
       SET ${fields.join(', ')}
       WHERE id = ?
-    `).run(...params);
+    `, params);
   }
 
   /**
    * Delete quest
    */
-  static delete(id) {
-    return db.prepare('DELETE FROM quests WHERE id = ?').run(id);
+  static async delete(id) {
+    return await db.run('DELETE FROM quests WHERE id = ?', [id]);
   }
 
   /**
    * Complete quest
    */
-  static complete(id) {
-    return db.prepare(`
+  static async complete(id) {
+    return await db.run(`
       UPDATE quests
       SET status = 'completed', completed_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(id);
+    `, [id]);
   }
 
   /**
    * Fail quest
    */
-  static fail(id) {
-    return db.prepare(`
+  static async fail(id) {
+    return await db.run(`
       UPDATE quests
       SET status = 'failed', completed_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(id);
+    `, [id]);
   }
 
   /**
    * Get recent E-rank quests (for anti-grind)
    */
-  static getRecentEasyQuests() {
-    return db.prepare(`
+  static async getRecentEasyQuests() {
+    return await db.get(`
       SELECT COUNT(*) as count 
       FROM quests 
       WHERE difficulty = 'E' 
       AND status = 'completed'
       AND completed_at > datetime('now', '-24 hours')
-    `).get();
+    `);
   }
 }
 

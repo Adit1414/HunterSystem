@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import XPBar from './XPBar';
+import api from '../../services/api';
 import { formatNumber } from '../../utils/formatters';
 import './Dashboard.css';
 
@@ -25,17 +26,10 @@ function Dashboard({ user, stats, onRefresh }) {
     if (allocating) return;
     setAllocating(true);
     try {
-      const response = await fetch('http://localhost:3001/api/user/stats', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [statName.toLowerCase()]: 1 })
-      });
+      // Use centralized API service
+      await api.post('/user/stats', { [statName.toLowerCase()]: 1 });
 
-      if (response.ok) {
-        if (onRefresh) onRefresh();
-      } else {
-        console.error("Failed to allocate stat");
-      }
+      if (onRefresh) onRefresh();
     } catch (error) {
       console.error("Error allocation stat:", error);
     } finally {

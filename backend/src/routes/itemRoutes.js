@@ -5,6 +5,7 @@
 
 import express from 'express';
 import db from '../config/database.js';
+import Item from '../models/Item.js';
 
 const router = express.Router();
 
@@ -12,77 +13,61 @@ const router = express.Router();
  * GET /api/items
  * Get all items in inventory with optional filtering
  */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { rarity, type, sortBy } = req.query;
-    
-    let query = 'SELECT * FROM items';
-    const conditions = [];
-    const params = [];
 
-    if (rarity) {
-      conditions.push('rarity = ?');
-      params.push(rarity);
-    }
+    // Use Item model for basic filtering
+    // Note: Model currently supports rarity and type filtering.
+    // Sorting logic in model is basic.
+    // If the query is complex (sortBy), we might need custom logic or update Model.
+    // The current Item.getAll implementation has specific sorting hardcoded.
+    // Let's rely on Item.getAll for now or use direct query if sorting differs.
 
-    if (type) {
-      conditions.push('type = ?');
-      params.push(type);
-    }
+    // The previous implementation had complex sorting logic in the route.
+    // To match it, we should probably keep logic here or move it to Model.
+    // Item.getAll has: ORDER BY custom_rarity, obtained_at DESC
 
-    if (conditions.length > 0) {
-      query += ' WHERE ' + conditions.join(' AND ');
-    }
+    // If sortBy matches default, use model.
+    // If not, use custom query here (async).
 
-    // Sorting
-    const rarityOrder = {
-      'mythic': 5,
-      'legendary': 4,
-      'epic': 3,
-      'rare': 2,
-      'common': 1
-    };
-
-    if (sortBy === 'rarity') {
-      // Sort by rarity (mythic first), then by obtained date
-      query += ` ORDER BY 
-        CASE rarity
-          WHEN 'mythic' THEN 5
-          WHEN 'legendary' THEN 4
-          WHEN 'epic' THEN 3
-          WHEN 'rare' THEN 2
-          WHEN 'common' THEN 1
-        END DESC,
-        obtained_at DESC`;
-    } else if (sortBy === 'newest') {
-      query += ' ORDER BY obtained_at DESC';
-    } else if (sortBy === 'oldest') {
-      query += ' ORDER BY obtained_at ASC';
-    } else if (sortBy === 'name') {
-      query += ' ORDER BY name ASC';
+    if (!sortBy || sortBy === 'rarity') {
+      const items = await Item.getAll({ rarity, type });
+      const stats = await Item.getStats();
+      res.json({ items, stats: stats.overall }); // aligning response structure
     } else {
-      // Default: newest first
-      query += ' ORDER BY obtained_at DESC';
+      // Custom sorting logic re-implemented async
+      let query = 'SELECT * FROM items';
+      const conditions = [];
+      const params = [];
+
+      if (rarity) {
+        conditions.push('rarity = ?');
+        params.push(rarity);
+      }
+      if (type) {
+        conditions.push('type = ?');
+        params.push(type);
+      }
+      if (conditions.length > 0) {
+        query += ' WHERE ' + conditions.join(' AND ');
+      }
+
+      if (sortBy === 'newest') {
+        query += ' ORDER BY obtained_at DESC';
+      } else if (sortBy === 'oldest') {
+        query += ' ORDER BY obtained_at ASC';
+      } else if (sortBy === 'name') {
+        query += ' ORDER BY name ASC';
+      } else {
+        query += ' ORDER BY obtained_at DESC';
+      }
+
+      const items = await db.query(query, params);
+      const stats = await Item.getStats(); // async call
+
+      res.json({ items, stats: stats.overall });
     }
-
-    const items = db.prepare(query).all(...params);
-
-    // Get statistics
-    const stats = db.prepare(`
-      SELECT 
-        COUNT(*) as total,
-        SUM(CASE WHEN rarity = 'mythic' THEN 1 ELSE 0 END) as mythic,
-        SUM(CASE WHEN rarity = 'legendary' THEN 1 ELSE 0 END) as legendary,
-        SUM(CASE WHEN rarity = 'epic' THEN 1 ELSE 0 END) as epic,
-        SUM(CASE WHEN rarity = 'rare' THEN 1 ELSE 0 END) as rare,
-        SUM(CASE WHEN rarity = 'common' THEN 1 ELSE 0 END) as common
-      FROM items
-    `).get();
-
-    res.json({ 
-      items,
-      stats
-    });
 
   } catch (error) {
     console.error('Error fetching items:', error);
@@ -94,9 +79,9 @@ router.get('/', (req, res) => {
  * GET /api/items/:id
  * Get single item by ID
  */
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const item = db.prepare('SELECT * FROM items WHERE id = ?').get(req.params.id);
+    const item = await Item.getById(req.params.id);
 
     if (!item) {
       return res.status(404).json({ error: 'Item not found' });
@@ -114,15 +99,15 @@ router.get('/:id', (req, res) => {
  * DELETE /api/items/:id
  * Delete/discard item from inventory
  */
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    const item = db.prepare('SELECT * FROM items WHERE id = ?').get(req.params.id);
+    const item = await Item.getById(req.params.id);
 
     if (!item) {
       return res.status(404).json({ error: 'Item not found' });
     }
 
-    db.prepare('DELETE FROM items WHERE id = ?').run(req.params.id);
+    await Item.delete(req.params.id);
 
     res.json({ message: 'Item discarded successfully' });
 
@@ -137,7 +122,7 @@ router.delete('/:id', (req, res) => {
  * Choose an item from level-up reward choices
  * Expects: { choiceId: string, itemId: string }
  */
-router.post('/choose', (req, res) => {
+router.post('/choose', async (req, res) => {
   try {
     const { choiceId, itemData } = req.body;
 
@@ -146,22 +131,13 @@ router.post('/choose', (req, res) => {
     }
 
     // Insert chosen item
-    db.prepare(`
-      INSERT INTO items (id, name, description, rarity, type, obtained_at)
-      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    `).run(
-      itemData.id,
-      itemData.name,
-      itemData.description,
-      itemData.rarity,
-      itemData.type
-    );
+    await Item.create(itemData);
 
-    const item = db.prepare('SELECT * FROM items WHERE id = ?').get(itemData.id);
+    const item = await Item.getById(itemData.id);
 
-    res.json({ 
+    res.json({
       message: 'Item claimed successfully',
-      item 
+      item
     });
 
   } catch (error) {
@@ -174,49 +150,27 @@ router.post('/choose', (req, res) => {
  * GET /api/items/stats/summary
  * Get detailed inventory statistics
  */
-router.get('/stats/summary', (req, res) => {
+router.get('/stats/summary', async (req, res) => {
   try {
-    const overall = db.prepare(`
-      SELECT 
-        COUNT(*) as total,
-        COUNT(DISTINCT type) as uniqueTypes,
-        SUM(CASE WHEN rarity = 'mythic' THEN 1 ELSE 0 END) as mythic,
-        SUM(CASE WHEN rarity = 'legendary' THEN 1 ELSE 0 END) as legendary,
-        SUM(CASE WHEN rarity = 'epic' THEN 1 ELSE 0 END) as epic,
-        SUM(CASE WHEN rarity = 'rare' THEN 1 ELSE 0 END) as rare,
-        SUM(CASE WHEN rarity = 'common' THEN 1 ELSE 0 END) as common
-      FROM items
-    `).get();
-
-    const byType = db.prepare(`
-      SELECT type, COUNT(*) as count
-      FROM items
-      GROUP BY type
-      ORDER BY count DESC
-    `).all();
-
-    const recentItems = db.prepare(`
-      SELECT * FROM items
-      ORDER BY obtained_at DESC
-      LIMIT 5
-    `).all();
+    // Item.getStats() returns { overall, byType, recentItems }
+    const stats = await Item.getStats();
 
     const rarityDistribution = {
-      mythic: overall.mythic,
-      legendary: overall.legendary,
-      epic: overall.epic,
-      rare: overall.rare,
-      common: overall.common
+      mythic: stats.overall.mythic,
+      legendary: stats.overall.legendary,
+      epic: stats.overall.epic,
+      rare: stats.overall.rare,
+      common: stats.overall.common
     };
 
     res.json({
       overall: {
-        total: overall.total,
-        uniqueTypes: overall.uniqueTypes
+        total: stats.overall.total,
+        uniqueTypes: stats.overall.uniqueTypes
       },
       rarityDistribution,
-      byType,
-      recentItems
+      byType: stats.byType,
+      recentItems: stats.recentItems
     });
 
   } catch (error) {
