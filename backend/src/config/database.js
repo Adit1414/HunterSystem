@@ -85,6 +85,14 @@ class DBAdapter {
     }
   }
 
+  async exec(sql) {
+    if (this.type === 'postgres') {
+      await this.pool.query(sql);
+    } else {
+      this.sqlite.exec(sql);
+    }
+  }
+
   async transaction(callback) {
     if (this.type === 'postgres') {
       const client = await this.pool.connect();
