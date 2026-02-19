@@ -27,14 +27,12 @@ const RANK_NAMES = {
 
 /**
  * Calculate XP required to reach a specific level
- * Uses exponential curve: 100 * level^1.5
- * 
  * @param {number} level - Target level
  * @returns {number} Total XP needed from level 1
  */
 export function getTotalXPForLevel(level) {
   if (level <= 1) return 0;
-  
+
   let totalXP = 0;
   for (let i = 1; i < level; i++) {
     totalXP += getXPForNextLevel(i);
@@ -49,7 +47,7 @@ export function getTotalXPForLevel(level) {
  * @returns {number} XP needed for next level
  */
 export function getXPForNextLevel(currentLevel) {
-  return Math.floor(100 * Math.pow(currentLevel, 1.5));
+  return Math.floor(100 * Math.pow(currentLevel, 1.1));
 }
 
 /**
@@ -97,7 +95,7 @@ export function processLevelUp(currentLevel, currentXP, xpGained) {
   // Keep leveling up if XP exceeds threshold
   while (true) {
     const xpNeeded = getXPForNextLevel(newLevel);
-    
+
     if (newXP >= xpNeeded) {
       newXP -= xpNeeded;
       newLevel++;
