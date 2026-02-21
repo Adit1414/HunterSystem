@@ -94,29 +94,35 @@ export class User {
         // Ideally we use `xpDistribution` percentages.
 
         let allocatedPoints = 0;
-        const pointsToAdd = {};
+        const percentagePointsToAdd = {};
 
-        // Calculate points per 17% rule (Floor)
+        // Calculate 5 points based on percentage/17% rule (Floor)
         for (const attr of attributes) {
-          const percent = (xpDistribution[attr] / totalLevelXp) * 100;
+          const percent = totalLevelXp > 0 ? (xpDistribution[attr] / totalLevelXp) * 100 : 0;
           const points = Math.floor(percent / 17);
-          pointsToAdd[attr] = points;
+          percentagePointsToAdd[attr] = points;
           allocatedPoints += points;
         }
 
-        // Fill remaining points to reach exactly 5
+        // Fill remaining percentage points to reach exactly 5
         let pointsNeeded = 5 - allocatedPoints;
         if (pointsNeeded > 0) {
           // Sort by remainder of % 17
           const remainders = attributes.map(attr => {
-            const percent = (xpDistribution[attr] / totalLevelXp) * 100;
+            const percent = totalLevelXp > 0 ? (xpDistribution[attr] / totalLevelXp) * 100 : 0;
             return { attr, remainder: percent % 17 };
           }).sort((a, b) => b.remainder - a.remainder);
 
           for (let i = 0; i < pointsNeeded; i++) {
             const target = remainders[i % remainders.length].attr; // cycled if needed (unlikely)
-            pointsToAdd[target] = (pointsToAdd[target] || 0) + 1;
+            percentagePointsToAdd[target] = (percentagePointsToAdd[target] || 0) + 1;
           }
+        }
+
+        // Final points to add: 1 automatic point + percentage points
+        const pointsToAdd = {};
+        for (const attr of attributes) {
+          pointsToAdd[attr] = 1 + (percentagePointsToAdd[attr] || 0);
         }
 
         // Apply Stats

@@ -15,7 +15,7 @@ const TARGET_USER_ID = 1;
 // --- OPTION 1: UPDATE PROGRESSION ---
 // Set NEW_TOTAL_XP to a number to update your Level and Rank automatically.
 // Set to null to keep current XP.
-const NEW_TOTAL_XP = null; // Example: 5000
+const NEW_TOTAL_XP = 2800; // Example: 5000
 
 // --- OPTION 2: UPDATE ATTRIBUTES ---
 // Set specific attributes to new values. Set to null to leave unchanged.
@@ -32,7 +32,7 @@ const NEW_ATTRIBUTES = {
 // Enter the ID (string) OR an array of IDs ["id1", "id2"] to DELETE.
 // Set to null to skip.
 const DELETE_ITEM_ID = []; // Example: "quest_1729123..." or ["quest_1...", "quest_2..."]
-const DELETE_QUEST_ID = [];  // Example: "item_98231..." or ["item_1...", "item_2..."]
+const DELETE_QUEST_ID = ["e85025f5-522a-4fef-8512-13bc939e808f"];  // Example: "item_98231..." or ["item_1...", "item_2..."]
 
 // --- OPTION 4: LIST DATA ---
 // Set to true to see a list of all Quests and Items with their IDs in the console.
