@@ -5,7 +5,7 @@ import './Inventory.css';
 function Inventory({ items, onItemsChange }) {
     const [filter, setFilter] = useState('All');
 
-    const categories = ['All', 'Weapon', 'Armor', 'Consumable', 'Material'];
+    const categories = ['All', 'Weapon', 'Armor', 'Consumable', 'Accessory'];
 
     const filteredItems = items.filter(item =>
         filter === 'All' || item.type.toLowerCase() === filter.toLowerCase()

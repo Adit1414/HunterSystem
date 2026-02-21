@@ -15,24 +15,24 @@ const TARGET_USER_ID = 1;
 // --- OPTION 1: UPDATE PROGRESSION ---
 // Set NEW_TOTAL_XP to a number to update your Level and Rank automatically.
 // Set to null to keep current XP.
-const NEW_TOTAL_XP = 1800; // Example: 5000
+const NEW_TOTAL_XP = null; // Example: 5000
 
 // --- OPTION 2: UPDATE ATTRIBUTES ---
 // Set specific attributes to new values. Set to null to leave unchanged.
 const NEW_ATTRIBUTES = {
-    strength: null,      // Example: 50
-    intelligence: null,
-    creation: null,
-    network: null,       // Previously 'sense'
-    vitality: null,
+    strength: 19,      // Example: 50
+    creation: 26,
+    network: 19,       
+    vitality: 18,
+    intelligence: 38,
     stat_points: null    // Unspent points
 };
 
 // --- OPTION 3: DELETE SPECIFIC DATA ---
-// Enter the ID (string) of the quest or item you want to DELETE.
+// Enter the ID (string) OR an array of IDs ["id1", "id2"] to DELETE.
 // Set to null to skip.
-const DELETE_QUEST_ID = null; // Example: "quest_1729123..."
-const DELETE_ITEM_ID = null;  // Example: "item_98231..."
+const DELETE_ITEM_ID = []; // Example: "quest_1729123..." or ["quest_1...", "quest_2..."]
+const DELETE_QUEST_ID = [];  // Example: "item_98231..." or ["item_1...", "item_2..."]
 
 // --- OPTION 4: LIST DATA ---
 // Set to true to see a list of all Quests and Items with their IDs in the console.
@@ -122,18 +122,28 @@ async function main() {
 
         // 3. Delete Quest
         if (DELETE_QUEST_ID) {
-            console.log(`\n📜 Deleting Quest: ${DELETE_QUEST_ID}...`);
-            const result = await db.run('DELETE FROM quests WHERE id = ?', [DELETE_QUEST_ID]);
-            if (result.changes > 0) console.log('   ✅ Quest deleted.');
-            else console.log('   ⚠️ Quest not found.');
+            const ids = Array.isArray(DELETE_QUEST_ID) ? DELETE_QUEST_ID : [DELETE_QUEST_ID];
+            if (ids.length > 0) {
+                console.log(`\n📜 Deleting ${ids.length} Quest(s)...`);
+                for (const id of ids) {
+                    const result = await db.run('DELETE FROM quests WHERE id = ?', [id]);
+                    if (result.changes > 0) console.log(`   ✅ Quest deleted: ${id}`);
+                    else console.log(`   ⚠️ Quest not found: ${id}`);
+                }
+            }
         }
 
         // 4. Delete Item
         if (DELETE_ITEM_ID) {
-            console.log(`\n🎒 Deleting Item: ${DELETE_ITEM_ID}...`);
-            const result = await db.run('DELETE FROM items WHERE id = ?', [DELETE_ITEM_ID]);
-            if (result.changes > 0) console.log('   ✅ Item deleted.');
-            else console.log('   ⚠️ Item not found.');
+            const ids = Array.isArray(DELETE_ITEM_ID) ? DELETE_ITEM_ID : [DELETE_ITEM_ID];
+            if (ids.length > 0) {
+                console.log(`\n🎒 Deleting ${ids.length} Item(s)...`);
+                for (const id of ids) {
+                    const result = await db.run('DELETE FROM items WHERE id = ?', [id]);
+                    if (result.changes > 0) console.log(`   ✅ Item deleted: ${id}`);
+                    else console.log(`   ⚠️ Item not found: ${id}`);
+                }
+            }
         }
 
         console.log('\n✨ Done! Reload your app to see changes.');

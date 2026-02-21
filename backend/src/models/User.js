@@ -39,6 +39,9 @@ export class User {
     const user = await this.getById(id);
     if (!user) throw new Error('User not found');
 
+    // Ensure lowercase for attribute mapping
+    attribute = (attribute || 'strength').toLowerCase();
+
     let currentLevel = user.level;
     let currentXp = user.xp;
     let totalXpEarned = user.total_xp_earned + amount;

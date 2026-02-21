@@ -17,7 +17,7 @@ function QuestForm({ onQuestCreated, onCancel }) {
         try {
             await createQuest(formData);
             onQuestCreated();
-            setFormData({ title: '', description: '', difficulty: 'E', dueDate: '' });
+            setFormData({ title: '', description: '', difficulty: 'E', dueDate: '', attribute: 'strength' });
         } catch (error) {
             console.error('Failed to create quest:', error);
         } finally {
