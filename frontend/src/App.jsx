@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Header from './components/Layout/Header';
 import Dashboard from './components/Dashboard/Dashboard';
 import QuestBoard from './components/Quests/QuestBoard';
+import DailyQuests from './components/Quests/DailyQuests';
 import Inventory from './components/Inventory/Inventory';
 import LevelUpModal from './components/Modals/LevelUpModal';
 import RewardModal from './components/Modals/RewardModal';
@@ -133,6 +134,12 @@ function App() {
               quests={quests}
               onQuestComplete={handleQuestComplete}
               onQuestsChange={refreshQuests}
+            />
+          )}
+
+          {activeView === 'daily' && (
+            <DailyQuests
+              onQuestComplete={handleQuestComplete}
             />
           )}
 

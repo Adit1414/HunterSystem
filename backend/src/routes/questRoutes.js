@@ -24,16 +24,41 @@ const router = express.Router();
  */
 router.get('/', async (req, res) => {
   try {
-    const { status, difficulty } = req.query;
+    const { status, difficulty, type } = req.query;
 
     // Use Quest model
-    const quests = await Quest.getAll({ status, difficulty });
+    const quests = await Quest.getAll({ status, difficulty, type });
 
     res.json({ quests });
 
   } catch (error) {
     console.error('Error fetching quests:', error);
     res.status(500).json({ error: 'Failed to fetch quests' });
+  }
+});
+
+/**
+ * GET /api/quests/daily
+ * Get all daily quests and countdown to midnight
+ */
+router.get('/daily', async (req, res) => {
+  try {
+    const quests = await Quest.getAll({ type: 'daily' });
+
+    const now = new Date();
+    const midnight = new Date();
+    midnight.setHours(24, 0, 0, 0); // Next midnight
+    const msToMidnight = midnight.getTime() - now.getTime();
+
+    res.json({
+      quests,
+      msToMidnight,
+      resetAt: midnight.toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error fetching daily quests:', error);
+    res.status(500).json({ error: 'Failed to fetch daily quests' });
   }
 });
 

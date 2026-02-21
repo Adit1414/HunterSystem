@@ -24,6 +24,11 @@ export class Quest {
       params.push(filters.difficulty);
     }
 
+    if (filters.type) {
+      conditions.push('type = ?');
+      params.push(filters.type);
+    }
+
     if (conditions.length > 0) {
       query += ' WHERE ' + conditions.join(' AND ');
     }

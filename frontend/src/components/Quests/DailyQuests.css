@@ -1,0 +1,143 @@
+.daily-quests-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.daily-quests-loading {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 40px;
+  font-size: 1.2rem;
+}
+
+.daily-header-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.daily-header-card h2 {
+  margin: 0 0 10px 0;
+  color: var(--primary-color);
+  font-size: 1.8rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.reset-timer {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  margin: 0 0 15px 0;
+}
+
+.reset-timer span {
+  color: #ff9800;
+  font-family: monospace;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.status-banner {
+  padding: 15px;
+  border-radius: 6px;
+  border-left: 4px solid;
+  background: rgba(0,0,0,0.2);
+}
+
+.status-banner.danger {
+  border-left-color: var(--danger-color);
+}
+
+.status-banner.safe {
+  border-left-color: var(--quest-completed);
+}
+
+.status-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.completion-count {
+  font-size: 1.4rem;
+  font-weight: bold;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 5px 10px;
+  border-radius: 4px;
+}
+
+.status-banner p {
+  margin: 0;
+  color: var(--text-primary);
+  opacity: 0.9;
+}
+
+.progress-bar-container {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.quest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.daily-wrapper {
+  position: relative;
+  transition: transform 0.2s;
+}
+
+.daily-wrapper:hover {
+  transform: translateY(-2px);
+}
+
+.completed-wrapper {
+  opacity: 0.7;
+}
+
+.completed-wrapper .quest-card {
+  border-color: var(--quest-completed) !important;
+}
+
+.completed-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  backdrop-filter: blur(1px);
+}
+
+.completed-overlay span {
+  background: var(--quest-completed);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  transform: rotate(-5deg);
+}
+
+.no-quests {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px;
+  background: var(--card-bg);
+  border-radius: 8px;
+  color: var(--text-secondary);
+}

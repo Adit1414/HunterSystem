@@ -15,26 +15,31 @@ const TARGET_USER_ID = 1;
 // --- OPTION 1: UPDATE PROGRESSION ---
 // Set NEW_TOTAL_XP to a number to update your Level and Rank automatically.
 // Set to null to keep current XP.
-const NEW_TOTAL_XP = 2800; // Example: 5000
+const NEW_TOTAL_XP = null; // Example: 5000
 
 // --- OPTION 2: UPDATE ATTRIBUTES ---
 // Set specific attributes to new values. Set to null to leave unchanged.
 const NEW_ATTRIBUTES = {
-    strength: 19,      // Example: 50
-    creation: 26,
-    network: 19,       
-    vitality: 18,
-    intelligence: 38,
+    strength: 20,      // Example: 50
+    creation: 28,
+    network: 23,
+    vitality: 19,
+    intelligence: 40,
     stat_points: null    // Unspent points
 };
 
 // --- OPTION 3: DELETE SPECIFIC DATA ---
 // Enter the ID (string) OR an array of IDs ["id1", "id2"] to DELETE.
 // Set to null to skip.
-const DELETE_ITEM_ID = []; // Example: "quest_1729123..." or ["quest_1...", "quest_2..."]
-const DELETE_QUEST_ID = ["e85025f5-522a-4fef-8512-13bc939e808f"];  // Example: "item_98231..." or ["item_1...", "item_2..."]
+const DELETE_ITEM_ID = []; // Example: "item_98231..." or ["item_1...", "item_2..."]
+const DELETE_QUEST_ID = ["63b67a75-e7c1-4436-bf2c-8dddfcd488e8"]; // Example: "quest_1729123..." or ["quest_1...", "quest_2..."] 
 
-// --- OPTION 4: LIST DATA ---
+// --- OPTION 4: CHANGE QUEST STATUS ---
+// Enter the ID (string) OR an array of IDs ["id1", "id2"] to set back to 'active'.
+// Set to null to skip.
+const ACTIVATE_QUEST_ID = []; // Example: "quest_1729123..." or ["quest_1...", "quest_2..."]
+
+// --- OPTION 5: LIST DATA ---
 // Set to true to see a list of all Quests and Items with their IDs in the console.
 const LIST_DATA = true;
 
@@ -142,6 +147,19 @@ async function main() {
                     const result = await db.run('DELETE FROM items WHERE id = ?', [id]);
                     if (result.changes > 0) console.log(`   ✅ Item deleted: ${id}`);
                     else console.log(`   ⚠️ Item not found: ${id}`);
+                }
+            }
+        }
+
+        // 5. Activate Quest
+        if (ACTIVATE_QUEST_ID) {
+            const ids = Array.isArray(ACTIVATE_QUEST_ID) ? ACTIVATE_QUEST_ID : [ACTIVATE_QUEST_ID];
+            if (ids.length > 0) {
+                console.log(`\n📜 Activating ${ids.length} Quest(s)...`);
+                for (const id of ids) {
+                    const result = await db.run("UPDATE quests SET status = 'active' WHERE id = ?", [id]);
+                    if (result.changes > 0) console.log(`   ✅ Quest activated: ${id}`);
+                    else console.log(`   ⚠️ Quest not found: ${id}`);
                 }
             }
         }
