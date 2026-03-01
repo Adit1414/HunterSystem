@@ -1,50 +1,71 @@
-# Hunter System - Solo Leveling Inspired Productivity App
+<div align="center">
+  <h1>⚔️ Hunter System</h1>
+  <p>
+    <strong>A Gamified Productivity Application Inspired by Solo Leveling</strong>
+  </p>
+  <p>
+    <a href="#-features">Features</a> •
+    <a href="#-quick-start">Quick Start</a> •
+    <a href="#-game-mechanics">Game Mechanics</a> •
+    <a href="#-architecture">Architecture</a>
+  </p>
+</div>
 
-A gamified to-do list application inspired by the anime "Solo Leveling", where completing tasks grants XP, levels, and items. Built with React, Node.js, Express, and SQLite.
+<hr />
 
-## 🎮 Features
+## 📖 Overview
 
-- **Quest System**: Create tasks with difficulty rankings (E-S rank)
-- **Progression**: Earn XP and level up by completing quests
-- **Loot System**: Random item drops based on quest difficulty
-- **Rarity Tiers**: Common, Rare, Epic, Legendary, Mythic items
-- **Anti-Grind Mechanics**: Diminishing returns on easy quest spam
-- **Dark Fantasy UI**: Solo Leveling-inspired aesthetic
-- **AI Integration** *(Optional)*: LLM-generated flavor text via Ollama
+The **Hunter System** is a highly polished, gamified to-do list application engineered to turn your mundane daily tasks into epic RPG quests. Drawing deep inspiration from the popular anime "Solo Leveling", it combines effective task management with sophisticated progression and reward mechanics to keep you motivated and highly productive. 
 
-## 🏗️ Architecture
+Built on a robust full-stack architecture utilizing **React, Node.js, Express, and SQLite**, it also natively supports **LLM inference via Ollama** for dynamically generated flavor text to heighten immersion.
 
-```
-Frontend: React + Vite
-Backend: Node.js + Express
-Database: SQLite
-AI (Optional): Ollama + LangChain
-```
+---
 
-## 📋 Prerequisites
+## ✨ Key Features
 
-- Node.js 18+ (https://nodejs.org/)
-- npm or yarn
-- **Optional**: Ollama with LLaMA 3.1 8B (https://ollama.com/)
+### 🎯 Gamified Task Management
+- **Quest Ranks:** Organize tasks with flexible difficulty rankings ranging from E-Rank (Daily) to S-Rank (Boss Tier).
+- **Daily Quests:** 5 specific daily quests appear automatically at midnight (one for each key attribute). Complete at least 3 to avoid stat penalties!
+- **Archive System:** A comprehensive tracking system for reviewing successfully completed and tragically failed quests.
+
+### 📈 Dynamic Progression Engine
+- **Attribute Balancing:** Your core stats (Strength, Creation, Network, Vitality, and Intelligence) dynamically level up via quest completions.
+- **Level Curve:** Earn XP to level up. Progress scales exponentially to provide long-term engagement (`100 * N^1.5`).
+- **Penalty System:** Falling short on daily quests (-1 point deduction) or failing standard quests results in attribute deductions. 
+
+### 💎 Advanced Loot Mechanics
+- **Item Drops:** Random equipment drops based on quest difficulty and your personal rank.
+- **Rarity Tiers:** Obtain Common, Rare, Epic, Legendary, and elusive Mythic items.
+- **Milestone Rewards:** Guaranteed Rare item drops every 5 levels, and Legendary choices every 10 levels.
+- **Anti-Grind Rules:** Built-in diminishing returns to prevent spamming E-Rank quests for infinite XP.
+
+---
+
+## 🏗️ Technical Architecture
+
+- **Frontend:** React 18, Vite, Contextual Hooks, CSS3 (Modular Dark Fantasy Theme)
+- **Backend:** Node.js 18+, Express API Routing, Progression & Reward Services
+- **Database:** SQLite (Relational structure for lightweight, file-based persistence)
+
+---
 
 ## 🚀 Quick Start
 
-### 1. Install Dependencies
+Ensure you have **Node.js 18+** installed before proceeding.
 
+### 1. Install Dependencies
 ```bash
-# Backend
+# Install backend packages
 cd backend
 npm install
 
-# Frontend
+# Install frontend packages
 cd ../frontend
 npm install
 ```
 
-### 2. Configure Backend
-
-Edit `backend/.env`:
-
+### 2. Configure Environment
+In the `backend` directory, optionally configure your `.env` file for AI features:
 ```env
 PORT=3001
 DATABASE_PATH=./database/hunter.db
@@ -55,266 +76,71 @@ OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=llama3.1:8b
 ```
 
-### 3. Initialize Database
+### 3. Launch the System
+Open two terminals to run the frontend and backend servers concurrently:
 
-```bash
-cd backend
-npm run init-db
-```
-
-Or the database will auto-initialize on first server start.
-
-### 4. Start Servers
-
-**Terminal 1 - Backend:**
+**Terminal 1 (Backend):**
 ```bash
 cd backend
 npm run dev
 ```
 
-**Terminal 2 - Frontend:**
+**Terminal 2 (Frontend):**
 ```bash
 cd frontend
 npm run dev
 ```
-
-The app will open at `http://localhost:3000`
-
-## 🎯 Usage Guide
-
-### Creating Quests
-
-1. Click "📋 Quests" in navigation
-2. Click "+ New Quest"
-3. Enter title, description (optional), difficulty (E-S), and due date (optional)
-4. AI will generate flavor text if enabled, otherwise uses templates
-
-### Quest Difficulty Guide
-
-- **E-Rank**: Easy daily tasks (50 XP)
-- **D-Rank**: Normal tasks (100 XP)
-- **C-Rank**: Challenging tasks (200 XP)
-- **B-Rank**: Hard projects (400 XP)
-- **A-Rank**: Major milestones (800 XP)
-- **S-Rank**: "Boss" tier quests (1600 XP)
-
-### Completing Quests
-
-- Click "Complete" on any active quest
-- Receive XP (with bonuses for on-time completion)
-- Random item drops based on difficulty
-- Level up triggers special rewards
-
-### Level-Up Rewards
-
-- **Every 5 levels**: Guaranteed Rare+ item
-- **Every 10 levels**: Choose 1 of 3 Legendary items
-- **Milestone levels**: Rank promotions (E → D → C → B → A → S)
-
-### Inventory
-
-- View all collected items
-- Sorted by rarity (Mythic first)
-- Filter by type: Weapon, Armor, Accessory, Consumable
-- Discard unwanted items
-
-## 🤖 AI Integration (Optional)
-
-### Setup Ollama
-
-1. Install Ollama: https://ollama.com/
-2. Download LLaMA 3.1 8B:
-   ```bash
-   ollama pull llama3.1:8b
-   ```
-3. Start Ollama (usually auto-starts)
-4. Enable in `backend/.env`:
-   ```env
-   OLLAMA_ENABLED=true
-   ENABLE_AI_FLAVOR_TEXT=true
-   ```
-
-### AI Features
-
-- Generates quest descriptions
-- Creates item flavor text
-- Produces motivational level-up messages
-- Falls back to templates if unavailable
-
-## 📊 Game Mechanics
-
-### XP Formula
-
-```javascript
-baseXP[difficulty] * completionBonus * qualityBonus
-
-Bonuses:
-- On-time completion: +20%
-- Anti-grind penalty: -50% max (after 10 E-ranks in 24h)
-```
-
-### Level Curve
-
-```javascript
-XP for level N = 100 * N^1.5
-
-Examples:
-Level 1→2:   100 XP
-Level 5→6:   1,118 XP
-Level 10→11: 3,162 XP
-Level 50→51: 17,677 XP
-```
-
-### Drop Rates
-
-| Difficulty | Common | Rare | Epic | Legendary | Mythic |
-|------------|--------|------|------|-----------|--------|
-| E-Rank     | 80%    | 15%  | 4%   | 1%        | 0%     |
-| D-Rank     | 60%    | 30%  | 8%   | 2%        | 0%     |
-| C-Rank     | 40%    | 40%  | 15%  | 4%        | 1%     |
-| B-Rank     | 20%    | 40%  | 25%  | 12%       | 3%     |
-| A-Rank     | 10%    | 30%  | 35%  | 20%       | 5%     |
-| S-Rank     | 0%     | 20%  | 40%  | 30%       | 10%    |
-
-## 🛠️ Development
-
-### Project Structure
-
-```
-hunter-system/
-├── backend/
-│   ├── src/
-│   │   ├── config/        # Database setup
-│   │   ├── services/      # Game logic
-│   │   ├── routes/        # API endpoints
-│   │   └── server.js      # Entry point
-│   └── database/          # SQLite file
-├── frontend/
-│   ├── src/
-│   │   ├── components/    # React components
-│   │   ├── services/      # API client
-│   │   ├── utils/         # Helpers
-│   │   └── App.jsx        # Main app
-│   └── index.html
-└── README.md
-```
-
-### API Endpoints
-
-**User**
-- `GET /api/user` - Get user progress
-- `POST /api/user/reset` - Reset all progress
-
-**Quests**
-- `GET /api/quests` - List quests
-- `POST /api/quests` - Create quest
-- `PUT /api/quests/:id` - Update quest
-- `DELETE /api/quests/:id` - Delete quest
-- `POST /api/quests/:id/complete` - Complete quest
-- `POST /api/quests/:id/fail` - Fail quest
-
-**Items**
-- `GET /api/items` - List items
-- `DELETE /api/items/:id` - Discard item
-- `POST /api/items/choose` - Claim reward choice
-
-### Database Schema
-
-```sql
--- Users table
-users (
-  id, level, xp, total_xp_earned, created_at, updated_at
-)
-
--- Quests table
-quests (
-  id, title, description, difficulty, xp_reward, gold_reward,
-  status, due_date, completed_at, created_at
-)
-
--- Items table
-items (
-  id, name, description, rarity, type, obtained_at
-)
-```
-
-## 🎨 Customization
-
-### Adjust XP Rewards
-
-Edit `backend/src/services/progressionEngine.js`:
-
-```javascript
-const BASE_XP = {
-  'E': 50,   // Change these values
-  'D': 100,
-  'C': 200,
-  // ... etc
-};
-```
-
-### Modify Level Curve
-
-Edit the `getXPForNextLevel` function:
-
-```javascript
-return Math.floor(100 * Math.pow(level, 1.5));  // Adjust formula
-```
-
-### Add Custom Items
-
-Edit `backend/src/services/rewardGenerator.js` → `ITEM_NAMES`
-
-### Change Theme Colors
-
-Edit `frontend/src/styles/global.css` → `:root` variables
-
-## 📝 Future Enhancements
-
-Potential additions (currently not implemented):
-
-- [ ] Daily quests with streak system
-- [ ] Achievements and badges
-- [ ] Quest templates library
-- [ ] Data export/import
-- [ ] Mobile-responsive improvements
-- [ ] Boss quests with special mechanics
-- [ ] Guild/party system (multi-user)
-- [ ] Item stats and equipment system
-- [ ] Dark/light theme toggle
-- [ ] Quest scheduling and reminders
-
-## 🐛 Troubleshooting
-
-**Database locked error:**
-- Close all connections, restart backend
-- Delete `hunter.db-wal` and `hunter.db-shm` if present
-
-**Port already in use:**
-- Change PORT in `backend/.env`
-- Update proxy in `frontend/vite.config.js`
-
-**AI not working:**
-- Verify Ollama is running: `ollama list`
-- Check `OLLAMA_BASE_URL` in `.env`
-- Review backend logs for connection errors
-- App works fine without AI (uses templates)
-
-**CORS errors:**
-- Ensure backend is running
-- Check frontend proxy in vite.config.js
-- Verify API_BASE_URL in frontend
-
-## 📄 License
-
-MIT License - Feel free to use and modify
-
-## 🙏 Acknowledgments
-
-- Inspired by "Solo Leveling" by Chugong
-- Built as a learning project for gamification
-- No affiliation with Solo Leveling IP holders
+Navigate to `http://localhost:3000` inside your browser to view the application!
 
 ---
 
-**Made with ⚔️ by a fellow hunter**
+## 🎯 Usage & Mechanics Guide
+
+### Creating and Completing Quests
+- Navigate to the **Quests** tab and click `+ New Quest`. Define the title, rank, and deadline. 
+- Completing a quest yields baseline XP, bonuses for timely completion, and potential item drops.
+- **Quest Difficulty Guideline:**
+  - **E-Rank:** Easy daily tasks (50 XP)
+  - **D-Rank:** Normal tasks (100 XP)
+  - **C-Rank:** Challenging tasks (200 XP)
+  - **B-Rank:** Hard projects (400 XP)
+  - **A-Rank:** Major milestones (800 XP)
+  - **S-Rank:** "Boss" tier quests (1600 XP)
+
+### Leveling Up and Attributes
+- **XP Formula:** `baseXP[difficulty] * completionBonus * qualityBonus`
+- Leveling up triggers stat distributions across your 5 core attributes, balanced by the nature of the completed quests and an automated +1 minimum baseline system.
+
+### Item Drops & Inventory
+- Collect and discard items directly from your **Inventory** tab, sorted intuitively by rarity.
+- **Drop Rates By Difficulty:** Higher-tier quests guarantee higher rarity drop floors. 
+  - (e.g., S-Rank gives 40% Epic, 30% Legendary, and 10% Mythic drop chances).
+
+---
+
+## 🤖 AI Setup (Optional)
+Unlock procedurally generated quest narratives and flavor texts without relying on template fallbacks:
+1. Download [Ollama](https://ollama.com/)
+2. Pull the model in your terminal: `ollama pull llama3.1:8b`
+3. Update `backend/.env` setting `OLLAMA_ENABLED=true` and `ENABLE_AI_FLAVOR_TEXT=true`. Restart your backend server.
+
+---
+
+## 🔮 Future Roadmap
+- [ ] Achievement and Badges Library
+- [ ] Boss Quests with custom interactive mechanics
+- [ ] Party/Guild System for multiplayer accountability
+- [ ] Granular Item Stats and equipment slots configuration
+
+---
+
+## 📄 License
+
+MIT License - Feel free to use and modify for your personal leveling journey.
+
+---
+
+<p align="center">
+  <b>Made with ⚔️ by a fellow hunter.</b><br />
+  <i>"Arise."</i>
+</p>
