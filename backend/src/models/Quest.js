@@ -130,6 +130,28 @@ export class Quest {
     `);
     }
   }
+
+  /**
+   * Get archived quests (recent completed/failed)
+   */
+  static async getArchived(limit = 10) {
+    if (db.type === 'postgres') {
+      return await db.query(`
+          SELECT * FROM quests 
+          WHERE status IN ('completed', 'failed')
+          ORDER BY completed_at DESC
+          LIMIT $1
+        `, [limit]);
+    } else {
+      // SQLite uses ?
+      return await db.query(`
+          SELECT * FROM quests 
+          WHERE status IN ('completed', 'failed')
+          ORDER BY completed_at DESC
+          LIMIT ?
+        `, [limit]);
+    }
+  }
 }
 
 export default Quest;
