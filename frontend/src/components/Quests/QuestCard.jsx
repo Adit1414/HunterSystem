@@ -4,7 +4,7 @@ import React from 'react';
  * QuestCard Component
  * Displays individual quest details and actions
  */
-function QuestCard({ quest, onComplete }) {
+function QuestCard({ quest, onComplete, onFail }) {
     const difficultyColors = {
         'E': 'var(--rank-e)',
         'D': 'var(--rank-d)',
@@ -39,12 +39,22 @@ function QuestCard({ quest, onComplete }) {
                     <span className="xp-reward">+{quest.xp_reward} XP</span>
                 </div>
 
-                <button
-                    className="btn btn-primary btn-sm"
-                    onClick={() => onComplete(quest.id)}
-                >
-                    Complete
-                </button>
+                <div className="quest-actions" style={{ display: 'flex', gap: '8px' }}>
+                    {quest.type !== 'daily' && (
+                        <button
+                            className="btn btn-danger btn-sm"
+                            onClick={() => onFail(quest)}
+                        >
+                            Fail
+                        </button>
+                    )}
+                    <button
+                        className="btn btn-primary btn-sm"
+                        onClick={() => onComplete(quest.id)}
+                    >
+                        Complete
+                    </button>
+                </div>
             </div>
         </div>
     );

@@ -24,6 +24,11 @@ export class Quest {
       params.push(filters.difficulty);
     }
 
+    if (filters.type) {
+      conditions.push('type = ?');
+      params.push(filters.type);
+    }
+
     if (conditions.length > 0) {
       query += ' WHERE ' + conditions.join(' AND ');
     }
@@ -44,12 +49,12 @@ export class Quest {
    * Create new quest
    */
   static async create(questData) {
-    const { id, title, description, difficulty, xp_reward, due_date } = questData;
+    const { id, title, description, difficulty, xp_reward, due_date, attribute } = questData;
 
     return await db.run(`
-      INSERT INTO quests (id, title, description, difficulty, xp_reward, due_date, status)
-      VALUES (?, ?, ?, ?, ?, ?, 'active')
-    `, [id, title, description, difficulty, xp_reward, due_date || null]);
+      INSERT INTO quests (id, title, description, difficulty, xp_reward, due_date, status, attribute)
+      VALUES (?, ?, ?, ?, ?, ?, 'active', ?)
+    `, [id, title, description, difficulty, xp_reward, due_date || null, attribute || 'strength']);
   }
 
   /**
@@ -106,13 +111,46 @@ export class Quest {
    * Get recent E-rank quests (for anti-grind)
    */
   static async getRecentEasyQuests() {
-    return await db.get(`
+    if (db.type === 'postgres') {
+      return await db.get(`
+        SELECT COUNT(*) as count 
+        FROM quests 
+        WHERE difficulty = 'E' 
+        AND status = 'completed'
+        AND completed_at > NOW() - INTERVAL '1 day'
+      `);
+    } else {
+      // SQLite
+      return await db.get(`
       SELECT COUNT(*) as count 
       FROM quests 
       WHERE difficulty = 'E' 
       AND status = 'completed'
       AND completed_at > datetime('now', '-24 hours')
     `);
+    }
+  }
+
+  /**
+   * Get archived quests (recent completed/failed)
+   */
+  static async getArchived(limit = 10) {
+    if (db.type === 'postgres') {
+      return await db.query(`
+          SELECT * FROM quests 
+          WHERE status IN ('completed', 'failed')
+          ORDER BY completed_at DESC
+          LIMIT $1
+        `, [limit]);
+    } else {
+      // SQLite uses ?
+      return await db.query(`
+          SELECT * FROM quests 
+          WHERE status IN ('completed', 'failed')
+          ORDER BY completed_at DESC
+          LIMIT ?
+        `, [limit]);
+    }
   }
 }
 

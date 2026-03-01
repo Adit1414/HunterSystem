@@ -1,0 +1,250 @@
+import { randomUUID } from 'crypto';
+import db from '../config/database.js';
+import Quest from '../models/Quest.js';
+import User from '../models/User.js';
+import { calculateQuestXP } from '../services/progressionEngine.js';
+import { generateQuestRewards } from '../services/rewardGenerator.js';
+import { generateQuestFlavor } from '../services/aiFlavorGenerator.js';
+import { GAME_CONSTANTS } from '../config/gameConstants.js';
+
+export const getAllQuests = async (req, res) => {
+    try {
+        const { status, difficulty, type } = req.query;
+        const quests = await Quest.getAll({ status, difficulty, type });
+        res.json({ quests });
+    } catch (error) {
+        console.error('Error fetching quests:', error);
+        res.status(500).json({ error: 'Failed to fetch quests' });
+    }
+};
+
+export const getDailyQuests = async (req, res) => {
+    try {
+        const quests = await Quest.getAll({ type: 'daily' });
+        const now = new Date();
+        const midnight = new Date();
+        midnight.setHours(24, 0, 0, 0);
+        const msToMidnight = midnight.getTime() - now.getTime();
+
+        res.json({
+            quests,
+            msToMidnight,
+            resetAt: midnight.toISOString()
+        });
+    } catch (error) {
+        console.error('Error fetching daily quests:', error);
+        res.status(500).json({ error: 'Failed to fetch daily quests' });
+    }
+};
+
+export const getArchivedQuests = async (req, res) => {
+    try {
+        const quests = await Quest.getArchived(10);
+        res.json({ quests });
+    } catch (error) {
+        console.error('Error fetching archived quests:', error);
+        res.status(500).json({ error: 'Failed to fetch archived quests' });
+    }
+};
+
+export const getQuestById = async (req, res) => {
+    try {
+        const quest = await Quest.getById(req.params.id);
+        if (!quest) return res.status(404).json({ error: 'Quest not found' });
+        res.json({ quest });
+    } catch (error) {
+        console.error('Error fetching quest:', error);
+        res.status(500).json({ error: 'Failed to fetch quest' });
+    }
+};
+
+export const createQuest = async (req, res) => {
+    try {
+        const { title, description, difficulty, dueDate, attribute } = req.body;
+        if (!title || !difficulty) return res.status(400).json({ error: 'Title and difficulty are required' });
+
+        const validDifficulties = Object.keys(GAME_CONSTANTS.XP_REWARDS);
+        if (!validDifficulties.includes(difficulty)) return res.status(400).json({ error: 'Invalid difficulty level' });
+
+        const xpReward = GAME_CONSTANTS.XP_REWARDS[difficulty];
+        let finalDescription = description;
+        if (!description || description.trim() === '') {
+            finalDescription = await generateQuestFlavor(title, difficulty);
+        }
+
+        const questId = randomUUID();
+        await Quest.create({
+            id: questId,
+            title,
+            description: finalDescription,
+            difficulty,
+            xp_reward: xpReward,
+            due_date: dueDate,
+            attribute: attribute || 'strength'
+        });
+
+        const quest = await Quest.getById(questId);
+        res.status(201).json({ quest });
+    } catch (error) {
+        console.error('Error creating quest:', error);
+        res.status(500).json({ error: 'Failed to create quest' });
+    }
+};
+
+export const updateQuest = async (req, res) => {
+    try {
+        const { title, description, difficulty, dueDate, status } = req.body;
+        const quest = await Quest.getById(req.params.id);
+        if (!quest) return res.status(404).json({ error: 'Quest not found' });
+        if (quest.status !== 'active') return res.status(400).json({ error: 'Cannot edit completed or failed quests' });
+
+        const updates = {};
+        if (title !== undefined) updates.title = title;
+        if (description !== undefined) updates.description = description;
+        if (dueDate !== undefined) updates.due_date = dueDate;
+
+        if (difficulty !== undefined) {
+            const validDifficulties = Object.keys(GAME_CONSTANTS.XP_REWARDS);
+            if (!validDifficulties.includes(difficulty)) return res.status(400).json({ error: 'Invalid difficulty level' });
+            updates.difficulty = difficulty;
+            updates.xp_reward = GAME_CONSTANTS.XP_REWARDS[difficulty];
+        }
+
+        if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'No fields to update' });
+
+        await Quest.update(req.params.id, updates);
+        const updatedQuest = await Quest.getById(req.params.id);
+        res.json({ quest: updatedQuest });
+    } catch (error) {
+        console.error('Error updating quest:', error);
+        res.status(500).json({ error: 'Failed to update quest' });
+    }
+};
+
+export const deleteQuest = async (req, res) => {
+    try {
+        const quest = await Quest.getById(req.params.id);
+        if (!quest) return res.status(404).json({ error: 'Quest not found' });
+
+        await Quest.delete(req.params.id);
+        res.json({ message: 'Quest deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting quest:', error);
+        res.status(500).json({ error: 'Failed to delete quest' });
+    }
+};
+
+export const completeQuest = async (req, res) => {
+    try {
+        const quest = await Quest.getById(req.params.id);
+        if (!quest) return res.status(404).json({ error: 'Quest not found' });
+        if (quest.status !== 'active') return res.status(400).json({ error: 'Quest is not active' });
+
+        const user = await User.getById(1);
+        const completedOnTime = quest.due_date ? new Date() <= new Date(quest.due_date) : false;
+        const recentEasyQuests = await Quest.getRecentEasyQuests();
+        const recentCount = recentEasyQuests ? recentEasyQuests.count : 0;
+
+        const xpGained = calculateQuestXP(quest, { completedOnTime, recentEasyQuests: recentCount });
+        const xpResult = await User.addXp(user.id, xpGained, quest.attribute || 'strength');
+
+        const specialRewards = [];
+        if (xpResult.leveledUp) {
+            let lvl = user.level + 1;
+            for (let i = 0; i < xpResult.levelsGained; i++, lvl++) {
+                if (lvl % 10 === 0) specialRewards.push({ type: 'legendary_choice', message: `Level ${lvl} Milestone!` });
+                else if (lvl % 5 === 0) specialRewards.push({ type: 'guaranteed_rare', message: `Level ${lvl} Milestone!` });
+            }
+        }
+
+        const rewards = generateQuestRewards(quest.difficulty, specialRewards);
+
+        await db.transaction(async (tx) => {
+            await tx.run(`UPDATE quests SET status = 'completed', completed_at = CURRENT_TIMESTAMP WHERE id = ?`, [quest.id]);
+            for (const item of rewards.items) {
+                await tx.run(`INSERT INTO items (id, name, description, rarity, type, obtained_at) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`, [item.id, item.name, item.description, item.rarity, item.type]);
+            }
+        });
+
+        const updatedUser = await User.getById(1);
+
+        res.json({
+            message: 'Quest completed!',
+            xpGained,
+            levelUp: xpResult.leveledUp ? {
+                oldLevel: user.level,
+                newLevel: xpResult.newLevel,
+                levelsGained: xpResult.levelsGained,
+                statPointsGained: 0,
+                statChanges: xpResult.statChanges
+            } : null,
+            rewards: { items: rewards.items, special: specialRewards },
+            user: {
+                level: updatedUser.level,
+                xp: updatedUser.xp,
+                totalXpEarned: updatedUser.total_xp_earned,
+                stats: {
+                    strength: updatedUser.strength,
+                    creation: updatedUser.creation,
+                    network: updatedUser.network,
+                    vitality: updatedUser.vitality,
+                    intelligence: updatedUser.intelligence,
+                    statPoints: updatedUser.stat_points
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error completing quest:', error);
+        res.status(500).json({ error: 'Failed to complete quest' });
+    }
+};
+
+export const failQuest = async (req, res) => {
+    try {
+        const quest = await Quest.getById(req.params.id);
+        if (!quest) return res.status(404).json({ error: 'Quest not found' });
+        if (quest.status !== 'active') return res.status(400).json({ error: 'Quest is not active' });
+
+        await Quest.fail(quest.id);
+
+        // 50% chance to deduct an attribute point
+        const penaltyApplied = Math.random() < 0.5;
+        let attributeTarget = quest.attribute ? quest.attribute.toLowerCase() : 'strength';
+        let newValue = 0;
+
+        if (penaltyApplied) {
+            const user = await User.getById(1);
+            newValue = Math.max(0, (user[attributeTarget] || 0) - 1);
+
+            await db.run(`
+          UPDATE users 
+          SET ${attributeTarget} = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = 1
+        `, [newValue]);
+        }
+
+        const updatedUser = await User.getById(1);
+
+        res.json({
+            message: 'Quest failed',
+            penaltyApplied,
+            attributePenalized: penaltyApplied ? attributeTarget : null,
+            user: {
+                level: updatedUser.level,
+                xp: updatedUser.xp,
+                totalXpEarned: updatedUser.total_xp_earned,
+                stats: {
+                    strength: updatedUser.strength,
+                    creation: updatedUser.creation,
+                    network: updatedUser.network,
+                    vitality: updatedUser.vitality,
+                    intelligence: updatedUser.intelligence,
+                    statPoints: updatedUser.stat_points
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error failing quest:', error);
+        res.status(500).json({ error: 'Failed to fail quest' });
+    }
+};

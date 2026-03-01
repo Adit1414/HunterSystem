@@ -58,6 +58,16 @@ export const getQuests = async (params = {}) => {
   return response.data;
 };
 
+export const getDailyQuests = async () => {
+  const response = await api.get('/quests/daily');
+  return response.data;
+};
+
+export const getArchivedQuests = async () => {
+  const response = await api.get('/quests/archive');
+  return response.data;
+};
+
 export const getQuest = async (id) => {
   const response = await api.get(`/quests/${id}`);
   return response.data;

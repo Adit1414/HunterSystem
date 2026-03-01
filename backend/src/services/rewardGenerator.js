@@ -4,17 +4,7 @@
  */
 
 import { randomUUID } from 'crypto';
-
-// Drop rates by quest difficulty
-// Each difficulty has different chances for each rarity tier
-const DROP_RATES = {
-  'E': { common: 0.80, rare: 0.15, epic: 0.04, legendary: 0.01, mythic: 0 },
-  'D': { common: 0.60, rare: 0.30, epic: 0.08, legendary: 0.02, mythic: 0 },
-  'C': { common: 0.40, rare: 0.40, epic: 0.15, legendary: 0.04, mythic: 0.01 },
-  'B': { common: 0.20, rare: 0.40, epic: 0.25, legendary: 0.12, mythic: 0.03 },
-  'A': { common: 0.10, rare: 0.30, epic: 0.35, legendary: 0.20, mythic: 0.05 },
-  'S': { common: 0, rare: 0.20, epic: 0.40, legendary: 0.30, mythic: 0.10 }
-};
+import { GAME_CONSTANTS } from '../config/gameConstants.js';
 
 // Item type distribution (equal chances)
 const ITEM_TYPES = ['weapon', 'armor', 'accessory', 'consumable'];
@@ -67,7 +57,7 @@ const DESCRIPTION_TEMPLATES = {
       'Preferred by B-rank hunters for its reliability.'
     ],
     epic: [
-      'Radiates a faint magical aura visible to those with high Sense.',
+      'Radiates a faint magical aura visible to those with high Intelligence.',
       'Crafted from monster bones and reinforced with magic.',
       'A weapon that has tasted the blood of high-ranking beasts.',
       'Vibrates with energy, longing for battle.'
@@ -190,8 +180,8 @@ const DESCRIPTION_TEMPLATES = {
  * @returns {string} Rarity tier
  */
 function rollRarity(difficulty) {
-  const rates = DROP_RATES[difficulty];
-  const roll = Math.random();
+  const rates = GAME_CONSTANTS.RARITY_CHANCES[difficulty];
+  const roll = Math.random() * 100;
 
   let cumulative = 0;
   for (const [rarity, chance] of Object.entries(rates)) {
@@ -265,16 +255,8 @@ export function generateItemChoices(count, rarity) {
  * @returns {boolean} Whether to drop an item
  */
 export function shouldDropItem(difficulty) {
-  const dropChances = {
-    'E': 0.3,  // 30% chance
-    'D': 0.5,  // 50% chance
-    'C': 0.7,  // 70% chance
-    'B': 0.9,  // 90% chance
-    'A': 1.0,  // Guaranteed
-    'S': 1.0   // Guaranteed
-  };
-
-  return Math.random() < dropChances[difficulty];
+  const dropChance = GAME_CONSTANTS.DROP_RATES[difficulty] / 100;
+  return Math.random() < dropChance;
 }
 
 /**

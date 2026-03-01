@@ -6,7 +6,8 @@ function QuestForm({ onQuestCreated, onCancel }) {
         title: '',
         description: '',
         difficulty: 'E',
-        dueDate: ''
+        dueDate: '',
+        attribute: 'strength'
     });
     const [loading, setLoading] = useState(false);
 
@@ -16,7 +17,7 @@ function QuestForm({ onQuestCreated, onCancel }) {
         try {
             await createQuest(formData);
             onQuestCreated();
-            setFormData({ title: '', description: '', difficulty: 'E', dueDate: '' });
+            setFormData({ title: '', description: '', difficulty: 'E', dueDate: '', attribute: 'strength' });
         } catch (error) {
             console.error('Failed to create quest:', error);
         } finally {
@@ -62,6 +63,20 @@ function QuestForm({ onQuestCreated, onCancel }) {
                             <option value="B">B-Rank</option>
                             <option value="A">A-Rank</option>
                             <option value="S">S-Rank</option>
+                        </select>
+                    </div>
+
+                    <div className="form-group">
+                        <label>Attribute Reward</label>
+                        <select
+                            value={formData.attribute}
+                            onChange={(e) => setFormData({ ...formData, attribute: e.target.value })}
+                        >
+                            <option value="strength">Strength</option>
+                            <option value="creation">Creation</option>
+                            <option value="network">Network</option>
+                            <option value="vitality">Vitality</option>
+                            <option value="intelligence">Intelligence</option>
                         </select>
                     </div>
 

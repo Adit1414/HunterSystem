@@ -93,8 +93,8 @@ function Dashboard({ user, stats, onRefresh }) {
 
         <div className="attributes-grid">
           {renderStatCard('Strength', user.stats?.strength || 10, 'strength')}
-          {renderStatCard('Agility', user.stats?.agility || 10, 'agility')}
-          {renderStatCard('Sense', user.stats?.sense || 10, 'sense')}
+          {renderStatCard('Creation', user.stats?.creation || 10, 'creation')}
+          {renderStatCard('Network', user.stats?.network || 10, 'network')}
           {renderStatCard('Vitality', user.stats?.vitality || 10, 'vitality')}
           {renderStatCard('Intelligence', user.stats?.intelligence || 10, 'intelligence')}
         </div>

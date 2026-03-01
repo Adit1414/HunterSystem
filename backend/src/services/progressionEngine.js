@@ -2,16 +2,10 @@
  * Progression Engine
  * Handles all XP calculation, level progression, and anti-grind mechanics
  */
+import { GAME_CONSTANTS } from '../config/gameConstants.js';
 
 // Base XP rewards by difficulty rank (inspired by Solo Leveling's E-S ranking)
-const BASE_XP = {
-  'E': 50,   // Easy daily tasks
-  'D': 100,  // Normal tasks  
-  'C': 200,  // Challenging tasks
-  'B': 400,  // Hard projects
-  'A': 800,  // Major milestones
-  'S': 1600  // "Boss" tier quests
-};
+const BASE_XP = GAME_CONSTANTS.XP_REWARDS;
 
 // Hunter rank names (for flavor)
 const RANK_NAMES = {
@@ -27,14 +21,12 @@ const RANK_NAMES = {
 
 /**
  * Calculate XP required to reach a specific level
- * Uses exponential curve: 100 * level^1.5
- * 
  * @param {number} level - Target level
  * @returns {number} Total XP needed from level 1
  */
 export function getTotalXPForLevel(level) {
   if (level <= 1) return 0;
-  
+
   let totalXP = 0;
   for (let i = 1; i < level; i++) {
     totalXP += getXPForNextLevel(i);
@@ -49,7 +41,7 @@ export function getTotalXPForLevel(level) {
  * @returns {number} XP needed for next level
  */
 export function getXPForNextLevel(currentLevel) {
-  return Math.floor(100 * Math.pow(currentLevel, 1.5));
+  return Math.floor(GAME_CONSTANTS.LEVELING.BASE_XP_MODIFIER * Math.pow(currentLevel, GAME_CONSTANTS.LEVELING.EXPONENT));
 }
 
 /**
@@ -66,13 +58,13 @@ export function calculateQuestXP(quest, context = {}) {
 
   // Bonus for completing before due date
   if (quest.dueDate && context.completedOnTime) {
-    multiplier *= 1.2; // +20% bonus
+    multiplier *= GAME_CONSTANTS.PROGRESSION.ON_TIME_BONUS_MULTIPLIER;
   }
 
   // Anti-grind: Diminishing returns on E-rank spam
-  // If more than 10 E-rank quests completed in last 24h, reduce XP
-  if (quest.difficulty === 'E' && context.recentEasyQuests > 10) {
-    const penalty = Math.min(0.5, (context.recentEasyQuests - 10) * 0.05);
+  const threshold = GAME_CONSTANTS.PROGRESSION.ANTI_GRIND.THRESHOLD_EASY_QUESTS;
+  if (quest.difficulty === 'E' && context.recentEasyQuests > threshold) {
+    const penalty = Math.min(GAME_CONSTANTS.PROGRESSION.ANTI_GRIND.PENALTY_MULTIPLIER, (context.recentEasyQuests - threshold) * 0.05);
     multiplier *= (1 - penalty);
   }
 
@@ -97,7 +89,7 @@ export function processLevelUp(currentLevel, currentXP, xpGained) {
   // Keep leveling up if XP exceeds threshold
   while (true) {
     const xpNeeded = getXPForNextLevel(newLevel);
-    
+
     if (newXP >= xpNeeded) {
       newXP -= xpNeeded;
       newLevel++;

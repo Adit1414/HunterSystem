@@ -90,6 +90,10 @@ async function startServer() {
     console.log('Checking AI availability...');
     await initializeAI();
 
+    // Start Daily Quests Cron
+    const { startDailyQuestCron } = await import('./services/dailyQuestService.js');
+    startDailyQuestCron();
+
     // Start server
     app.listen(PORT, () => {
       console.log('');
