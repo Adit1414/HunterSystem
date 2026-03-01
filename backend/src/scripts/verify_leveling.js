@@ -16,7 +16,7 @@ async function testLeveling() {
         console.log(`Initial State: Level ${user.level}, XP ${user.xp}, Stats: Str=${user.strength}, Int=${user.intelligence}`);
 
         // 3. Add XP (No Level Up)
-        // Level 1 -> 2 needs 100 XP (floor(100 * 1^1.5) = 100)
+        // Level 1 -> 2 needs 100 XP (floor(100 * 1^1.1) = 100)
         console.log('\n--- Test 1: Add 50 XP to Strength ---');
         await User.addXp(1, 50, 'strength');
         user = await User.getById(1);

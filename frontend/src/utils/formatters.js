@@ -2,6 +2,7 @@
  * Utility Functions
  * Formatting, calculations, and helper functions
  */
+import { UI_CONFIG } from './gameConfig';
 
 /**
  * Format number with commas (e.g., 1000 → 1,000)
@@ -15,7 +16,7 @@ export function formatNumber(num) {
  */
 export function formatDate(dateString) {
   if (!dateString) return 'No due date';
-  
+
   const date = new Date(dateString);
   const now = new Date();
   const diffTime = date - now;
@@ -30,8 +31,8 @@ export function formatDate(dateString) {
   } else if (diffDays <= 7) {
     return `Due in ${diffDays} days`;
   } else {
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
       year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
     });
@@ -50,44 +51,21 @@ export function isOverdue(dueDate) {
  * Get rarity color
  */
 export function getRarityColor(rarity) {
-  const colors = {
-    common: '#9ca3af',
-    rare: '#3b82f6',
-    epic: '#a855f7',
-    legendary: '#f59e0b',
-    mythic: '#ef4444'
-  };
-  return colors[rarity] || colors.common;
+  return UI_CONFIG.RARITY_COLORS[rarity] || UI_CONFIG.RARITY_COLORS.common;
 }
 
 /**
  * Get difficulty color
  */
 export function getDifficultyColor(difficulty) {
-  const colors = {
-    'E': '#94a3b8',
-    'D': '#60a5fa',
-    'C': '#34d399',
-    'B': '#fbbf24',
-    'A': '#f97316',
-    'S': '#dc2626'
-  };
-  return colors[difficulty] || colors.E;
+  return UI_CONFIG.DIFFICULTY_COLORS[difficulty] || UI_CONFIG.DIFFICULTY_COLORS.E;
 }
 
 /**
  * Get difficulty name
  */
 export function getDifficultyName(difficulty) {
-  const names = {
-    'E': 'Easy',
-    'D': 'Normal',
-    'C': 'Challenging',
-    'B': 'Hard',
-    'A': 'Critical',
-    'S': 'Catastrophic'
-  };
-  return names[difficulty] || 'Unknown';
+  return UI_CONFIG.DIFFICULTY_NAMES[difficulty] || 'Unknown';
 }
 
 /**
@@ -110,10 +88,10 @@ export function timeAgo(dateString) {
 
   for (const [unit, secondsInUnit] of Object.entries(intervals)) {
     const interval = Math.floor(seconds / secondsInUnit);
-    
+
     if (interval >= 1) {
-      return interval === 1 
-        ? `1 ${unit} ago` 
+      return interval === 1
+        ? `1 ${unit} ago`
         : `${interval} ${unit}s ago`;
     }
   }
@@ -166,7 +144,7 @@ export function sortByRarity(items) {
   return [...items].sort((a, b) => {
     const orderDiff = (rarityOrder[b.rarity] || 0) - (rarityOrder[a.rarity] || 0);
     if (orderDiff !== 0) return orderDiff;
-    
+
     // If same rarity, sort by obtained date (newest first)
     return new Date(b.obtainedAt) - new Date(a.obtainedAt);
   });

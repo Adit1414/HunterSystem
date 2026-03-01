@@ -239,7 +239,8 @@ export async function initializeDatabase() {
         status TEXT DEFAULT 'active' CHECK(status IN ('active', 'completed', 'failed')),
         due_date TIMESTAMP,
         completed_at TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        type TEXT DEFAULT 'normal' CHECK(type IN ('normal', 'daily'))
       );
     `);
 
@@ -251,6 +252,14 @@ export async function initializeDatabase() {
         rarity TEXT NOT NULL CHECK(rarity IN ('common', 'rare', 'epic', 'legendary', 'mythic')),
         type TEXT NOT NULL CHECK(type IN ('weapon', 'armor', 'accessory', 'consumable')),
         obtained_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // System Config / Tracking for daily resets
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS system_config (
+        key TEXT PRIMARY KEY,
+        value TEXT
       );
     `);
 
@@ -283,6 +292,7 @@ export async function initializeDatabase() {
         await db.exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS xp_vitality INTEGER DEFAULT 0`);
         await db.exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS xp_intelligence INTEGER DEFAULT 0`);
         await db.exec(`ALTER TABLE quests ADD COLUMN IF NOT EXISTS attribute TEXT DEFAULT 'strength'`);
+        await db.exec(`ALTER TABLE quests ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'normal'`);
       } else {
         const columns = await db.query("PRAGMA table_info(users)");
         if (!columns.some(col => col.name === 'xp_strength')) {
@@ -311,9 +321,13 @@ export async function initializeDatabase() {
           console.log('Migrating: Adding attribute to quests...');
           await db.exec("ALTER TABLE quests ADD COLUMN attribute TEXT DEFAULT 'strength'");
         }
+        if (!questColumns.some(col => col.name === 'type')) {
+          console.log('Migrating: Adding type to quests...');
+          await db.exec("ALTER TABLE quests ADD COLUMN type TEXT DEFAULT 'normal'");
+        }
       }
     } catch (err) {
-      console.error('Migration Error (Attribute XP):', err.message);
+      console.error('Migration Error (Attribute XP / Daily Type):', err.message);
     }
     // -----------------------------------
 

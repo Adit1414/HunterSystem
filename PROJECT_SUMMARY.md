@@ -130,7 +130,7 @@ Bonuses:
 ### Level Curve
 
 ```javascript
-XP for level N = 100 * N^1.5
+XP for level N = 100 * N^1.1
 
 Progression Examples:
 Level  1 →  2:     100 XP total

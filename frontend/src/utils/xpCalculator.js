@@ -5,11 +5,11 @@
 
 /**
  * Calculate XP required for a specific level
- * Matches backend formula: 100 * level^1.5
+ * Matches backend formula: 100 * level^1.1
  */
 export function getXPForLevel(level) {
   if (level <= 1) return 0;
-  return Math.floor(100 * Math.pow(level, 1.5));
+  return Math.floor(100 * Math.pow(level, 1.1));
 }
 
 /**
