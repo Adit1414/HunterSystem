@@ -7,6 +7,7 @@ import express from 'express';
 import {
   getAllQuests,
   getDailyQuests,
+  getArchivedQuests,
   getQuestById,
   createQuest,
   updateQuest,
@@ -19,6 +20,7 @@ const router = express.Router();
 
 router.get('/', getAllQuests);
 router.get('/daily', getDailyQuests);
+router.get('/archive', getArchivedQuests);
 router.get('/:id', getQuestById);
 router.post('/', createQuest);
 router.put('/:id', updateQuest);

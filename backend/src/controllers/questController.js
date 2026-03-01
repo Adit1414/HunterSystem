@@ -37,6 +37,16 @@ export const getDailyQuests = async (req, res) => {
     }
 };
 
+export const getArchivedQuests = async (req, res) => {
+    try {
+        const quests = await Quest.getArchived(10);
+        res.json({ quests });
+    } catch (error) {
+        console.error('Error fetching archived quests:', error);
+        res.status(500).json({ error: 'Failed to fetch archived quests' });
+    }
+};
+
 export const getQuestById = async (req, res) => {
     try {
         const quest = await Quest.getById(req.params.id);
@@ -196,7 +206,43 @@ export const failQuest = async (req, res) => {
         if (quest.status !== 'active') return res.status(400).json({ error: 'Quest is not active' });
 
         await Quest.fail(quest.id);
-        res.json({ message: 'Quest failed' });
+
+        // 50% chance to deduct an attribute point
+        const penaltyApplied = Math.random() < 0.5;
+        let attributeTarget = quest.attribute ? quest.attribute.toLowerCase() : 'strength';
+        let newValue = 0;
+
+        if (penaltyApplied) {
+            const user = await User.getById(1);
+            newValue = Math.max(0, (user[attributeTarget] || 0) - 1);
+
+            await db.run(`
+          UPDATE users 
+          SET ${attributeTarget} = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = 1
+        `, [newValue]);
+        }
+
+        const updatedUser = await User.getById(1);
+
+        res.json({
+            message: 'Quest failed',
+            penaltyApplied,
+            attributePenalized: penaltyApplied ? attributeTarget : null,
+            user: {
+                level: updatedUser.level,
+                xp: updatedUser.xp,
+                totalXpEarned: updatedUser.total_xp_earned,
+                stats: {
+                    strength: updatedUser.strength,
+                    creation: updatedUser.creation,
+                    network: updatedUser.network,
+                    vitality: updatedUser.vitality,
+                    intelligence: updatedUser.intelligence,
+                    statPoints: updatedUser.stat_points
+                }
+            }
+        });
     } catch (error) {
         console.error('Error failing quest:', error);
         res.status(500).json({ error: 'Failed to fail quest' });
