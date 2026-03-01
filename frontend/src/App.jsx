@@ -10,6 +10,10 @@ import { getUser, getQuests, getItems } from './services/api';
 import './styles/global.css';
 import './App.css';
 
+/**
+ * Main Application Component
+ * ⚠️ WARNING: CORE SYSTEM LOGIC - DO NOT MODIFY ROUTING OR STATE HANDLING UNLESS YOU KNOW WHAT YOU'RE DOING
+ */
 function App() {
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState(null);

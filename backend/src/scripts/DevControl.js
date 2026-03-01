@@ -20,11 +20,11 @@ const NEW_TOTAL_XP = null; // Example: 5000
 // --- OPTION 2: UPDATE ATTRIBUTES ---
 // Set specific attributes to new values. Set to null to leave unchanged.
 const NEW_ATTRIBUTES = {
-    strength: 20,      // Example: 50
-    creation: 28,
-    network: 23,
-    vitality: 19,
-    intelligence: 40,
+    strength: 25,      // Example: 50
+    creation: 35,
+    network: 32,
+    vitality: 24,
+    intelligence: 69,
     stat_points: null    // Unspent points
 };
 
@@ -32,7 +32,7 @@ const NEW_ATTRIBUTES = {
 // Enter the ID (string) OR an array of IDs ["id1", "id2"] to DELETE.
 // Set to null to skip.
 const DELETE_ITEM_ID = []; // Example: "item_98231..." or ["item_1...", "item_2..."]
-const DELETE_QUEST_ID = ["63b67a75-e7c1-4436-bf2c-8dddfcd488e8"]; // Example: "quest_1729123..." or ["quest_1...", "quest_2..."] 
+const DELETE_QUEST_ID = [""]; // Example: "quest_1729123..." or ["quest_1...", "quest_2..."] 
 
 // --- OPTION 4: CHANGE QUEST STATUS ---
 // Enter the ID (string) OR an array of IDs ["id1", "id2"] to set back to 'active'.

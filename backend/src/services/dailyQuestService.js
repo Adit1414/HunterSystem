@@ -100,10 +100,12 @@ export function startDailyQuestCron() {
     // Run on startup just in case server was off at midnight
     checkAndResetDailyQuests();
 
-    // Schedule to run exactly at 00:00 every day
-    cron.schedule('0 0 * * *', () => {
-        console.log('[DailyQuestService] Midnight triggered! Running daily check...');
+    // Check periodically (every minute) instead of only at midnight,
+    // to handle the computer sleeping through exactly 00:00.
+    // The checkAndResetDailyQuests function already prevents multiple resets
+    // in the same day by checking the 'last_daily_reset' value in the DB.
+    cron.schedule('* * * * *', () => {
         checkAndResetDailyQuests();
     });
-    console.log('⏰ Daily quest cron job scheduled.');
+    console.log('⏰ Daily quest check scheduled (runs every minute to ensure resets).');
 }
