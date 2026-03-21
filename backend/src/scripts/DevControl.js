@@ -20,11 +20,11 @@ const NEW_TOTAL_XP = null; // Example: 5000
 // --- OPTION 2: UPDATE ATTRIBUTES ---
 // Set specific attributes to new values. Set to null to leave unchanged.
 const NEW_ATTRIBUTES = {
-    strength: 25,      // Example: 50
-    creation: 35,
-    network: 32,
-    vitality: 24,
-    intelligence: 69,
+    strength: 22,      // Example: 50
+    creation: 43,
+    network: 29,
+    vitality: 23,
+    intelligence: 73,
     stat_points: null    // Unspent points
 };
 
@@ -32,14 +32,19 @@ const NEW_ATTRIBUTES = {
 // Enter the ID (string) OR an array of IDs ["id1", "id2"] to DELETE.
 // Set to null to skip.
 const DELETE_ITEM_ID = []; // Example: "item_98231..." or ["item_1...", "item_2..."]
-const DELETE_QUEST_ID = [""]; // Example: "quest_1729123..." or ["quest_1...", "quest_2..."] 
+const DELETE_QUEST_ID = []; // Example: "quest_1729123..." or ["quest_1...", "quest_2..."] 
 
 // --- OPTION 4: CHANGE QUEST STATUS ---
 // Enter the ID (string) OR an array of IDs ["id1", "id2"] to set back to 'active'.
 // Set to null to skip.
 const ACTIVATE_QUEST_ID = []; // Example: "quest_1729123..." or ["quest_1...", "quest_2..."]
 
-// --- OPTION 5: LIST DATA ---
+// --- OPTION 5: RESTORE FAILED QUEST ---
+// Enter the ID (string) OR an array of IDs ["id1", "id2"] of failed quests to set back to 'active'.
+// Set to null to skip.
+const RESTORE_FAILED_QUEST_ID = []; // Example: "quest_1729123..." or ["quest_1...", "quest_2..."]
+
+// --- OPTION 6: LIST DATA ---
 // Set to true to see a list of all Quests and Items with their IDs in the console.
 const LIST_DATA = true;
 
@@ -160,6 +165,19 @@ async function main() {
                     const result = await db.run("UPDATE quests SET status = 'active' WHERE id = ?", [id]);
                     if (result.changes > 0) console.log(`   ✅ Quest activated: ${id}`);
                     else console.log(`   ⚠️ Quest not found: ${id}`);
+                }
+            }
+        }
+
+        // 6. Restore Failed Quest
+        if (RESTORE_FAILED_QUEST_ID) {
+            const ids = Array.isArray(RESTORE_FAILED_QUEST_ID) ? RESTORE_FAILED_QUEST_ID : [RESTORE_FAILED_QUEST_ID];
+            if (ids.length > 0) {
+                console.log(`\n📜 Restoring ${ids.length} Failed Quest(s)...`);
+                for (const id of ids) {
+                    const result = await db.run("UPDATE quests SET status = 'active', completed_at = NULL WHERE id = ? AND status = 'failed'", [id]);
+                    if (result.changes > 0) console.log(`   ✅ Failed quest restored: ${id}`);
+                    else console.log(`   ⚠️ Failed quest not found or not in 'failed' state: ${id}`);
                 }
             }
         }

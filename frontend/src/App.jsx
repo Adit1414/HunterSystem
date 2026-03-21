@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Layout/Header';
 import Dashboard from './components/Dashboard/Dashboard';
 import QuestBoard from './components/Quests/QuestBoard';
@@ -6,6 +7,10 @@ import DailyQuests from './components/Quests/DailyQuests';
 import Inventory from './components/Inventory/Inventory';
 import LevelUpModal from './components/Modals/LevelUpModal';
 import RewardModal from './components/Modals/RewardModal';
+import LoginPage from './components/Auth/LoginPage';
+import SignupPage from './components/Auth/SignupPage';
+import ProtectedRoute from './components/Auth/ProtectedRoute';
+import { useAuth } from './context/AuthContext.jsx';
 import { getUser, getQuests, getItems } from './services/api';
 import './styles/global.css';
 import './App.css';
@@ -14,7 +19,9 @@ import './App.css';
  * Main Application Component
  * ⚠️ WARNING: CORE SYSTEM LOGIC - DO NOT MODIFY ROUTING OR STATE HANDLING UNLESS YOU KNOW WHAT YOU'RE DOING
  */
-function App() {
+
+/** Inner app content (protected) */
+function AppContent() {
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState(null);
   const [quests, setQuests] = useState([]);
@@ -23,6 +30,7 @@ function App() {
   const [levelUpData, setLevelUpData] = useState(null);
   const [rewardData, setRewardData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { signOut } = useAuth();
 
   // Load initial data
   useEffect(() => {
@@ -109,6 +117,10 @@ function App() {
     setRewardData(null);
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
   if (loading) {
     return (
       <div className="app-loading">
@@ -125,6 +137,7 @@ function App() {
         activeView={activeView}
         setActiveView={setActiveView}
         onRefresh={loadAllData}
+        onSignOut={handleSignOut}
       />
 
       <main className="app-main">
@@ -172,6 +185,41 @@ function App() {
         />
       )}
     </div>
+  );
+}
+
+/** Root App with routing */
+function App() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="app-loading">
+        <div className="spinner"></div>
+        <p>Initializing Hunter System...</p>
+      </div>
+    );
+  }
+
+  return (
+    <Routes>
+      <Route
+        path="/login"
+        element={user ? <Navigate to="/" replace /> : <LoginPage />}
+      />
+      <Route
+        path="/signup"
+        element={user ? <Navigate to="/" replace /> : <SignupPage />}
+      />
+      <Route
+        path="/*"
+        element={
+          <ProtectedRoute>
+            <AppContent />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
   );
 }
 

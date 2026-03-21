@@ -155,6 +155,7 @@ export async function initializeDatabase() {
       await db.exec(`
         CREATE TABLE IF NOT EXISTS users (
           id SERIAL PRIMARY KEY,
+          auth_user_id TEXT UNIQUE,
           level INTEGER DEFAULT 1,
           xp INTEGER DEFAULT 0,
           total_xp_earned INTEGER DEFAULT 0,
@@ -189,6 +190,7 @@ export async function initializeDatabase() {
       await db.exec(`
         CREATE TABLE IF NOT EXISTS users (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          auth_user_id TEXT UNIQUE,
           level INTEGER DEFAULT 1,
           xp INTEGER DEFAULT 0,
           total_xp_earned INTEGER DEFAULT 0,
@@ -231,6 +233,7 @@ export async function initializeDatabase() {
     await db.exec(`
       CREATE TABLE IF NOT EXISTS quests (
         id TEXT PRIMARY KEY,
+        user_id INTEGER,
         title TEXT NOT NULL,
         description TEXT,
         difficulty TEXT NOT NULL CHECK(difficulty IN ('E', 'D', 'C', 'B', 'A', 'S')),
@@ -247,6 +250,7 @@ export async function initializeDatabase() {
     await db.exec(`
       CREATE TABLE IF NOT EXISTS items (
         id TEXT PRIMARY KEY,
+        user_id INTEGER,
         name TEXT NOT NULL,
         description TEXT,
         rarity TEXT NOT NULL CHECK(rarity IN ('common', 'rare', 'epic', 'legendary', 'mythic')),
@@ -330,6 +334,36 @@ export async function initializeDatabase() {
       console.error('Migration Error (Attribute XP / Daily Type):', err.message);
     }
     // -----------------------------------
+
+    // --- MIGRATIONS FOR AUTH COLUMNS ---
+    try {
+      if (db.type === 'postgres') {
+        await db.exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_user_id TEXT UNIQUE`);
+        await db.exec(`ALTER TABLE quests ADD COLUMN IF NOT EXISTS user_id INTEGER`);
+        await db.exec(`ALTER TABLE items ADD COLUMN IF NOT EXISTS user_id INTEGER`);
+      } else {
+        const userCols = await db.query("PRAGMA table_info(users)");
+        if (!userCols.some(col => col.name === 'auth_user_id')) {
+          console.log('Migrating: Adding auth_user_id...');
+          await db.exec("ALTER TABLE users ADD COLUMN auth_user_id TEXT UNIQUE");
+        }
+
+        const questCols = await db.query("PRAGMA table_info(quests)");
+        if (!questCols.some(col => col.name === 'user_id')) {
+          console.log('Migrating: Adding user_id to quests...');
+          await db.exec("ALTER TABLE quests ADD COLUMN user_id INTEGER");
+        }
+
+        const itemCols = await db.query("PRAGMA table_info(items)");
+        if (!itemCols.some(col => col.name === 'user_id')) {
+          console.log('Migrating: Adding user_id to items...');
+          await db.exec("ALTER TABLE items ADD COLUMN user_id INTEGER");
+        }
+      }
+    } catch (err) {
+      console.error('Migration Error (Auth columns):', err.message);
+    }
+    // ----------------------------------
 
     console.log('✓ Database initialized successfully');
   }

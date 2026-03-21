@@ -8,6 +8,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { initializeDatabase } from './config/database.js';
 import { initializeAI } from './services/aiFlavorGenerator.js';
+import { requireAuth } from './middleware/authMiddleware.js';
 import userRoutes from './routes/userRoutes.js';
 import questRoutes from './routes/questRoutes.js';
 import itemRoutes from './routes/itemRoutes.js';
@@ -34,12 +35,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// API Routes
-app.use('/api/user', userRoutes);
-app.use('/api/quests', questRoutes);
-app.use('/api/items', itemRoutes);
-
-// Health check
+// Health check (unprotected)
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -47,6 +43,14 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// Apply auth middleware to all API routes below
+app.use('/api', requireAuth);
+
+// API Routes (protected)
+app.use('/api/user', userRoutes);
+app.use('/api/quests', questRoutes);
+app.use('/api/items', itemRoutes);
 
 // Serve Frontend in Production
 // Serve static files from the React app

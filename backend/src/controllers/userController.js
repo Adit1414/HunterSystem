@@ -4,13 +4,14 @@ import { getXPForNextLevel, getRankName, getProgressToNextLevel } from '../servi
 
 export const getUserProgress = async (req, res) => {
     try {
-        const user = await User.getById(1);
+        const userId = req.dbUserId;
+        const user = await User.getById(userId);
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         const xpForNextLevel = getXPForNextLevel(user.level);
         const progressPercentage = getProgressToNextLevel(user.xp, user.level);
         const rankName = getRankName(user.level);
-        const stats = await User.getStats(1);
+        const stats = await User.getStats(userId);
 
         res.json({
             user: {
@@ -41,23 +42,24 @@ export const getUserProgress = async (req, res) => {
 
 export const allocateStats = async (req, res) => {
     try {
+        const userId = req.dbUserId;
         const { strength, creation, network, vitality, intelligence } = req.body;
         const pointsToSpend = (strength || 0) + (creation || 0) + (network || 0) + (vitality || 0) + (intelligence || 0);
 
         if (pointsToSpend <= 0) return res.status(400).json({ error: 'No points specified' });
 
-        const user = await User.getById(1);
+        const user = await User.getById(userId);
         if (user.stat_points < pointsToSpend) return res.status(400).json({ error: 'Not enough stat points' });
 
         await db.transaction(async (tx) => {
             await tx.run(`
         UPDATE users
         SET strength = strength + ?, creation = creation + ?, network = network + ?, vitality = vitality + ?, intelligence = intelligence + ?, stat_points = stat_points - ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = 1
-      `, [strength || 0, creation || 0, network || 0, vitality || 0, intelligence || 0, pointsToSpend]);
+        WHERE id = ?
+      `, [strength || 0, creation || 0, network || 0, vitality || 0, intelligence || 0, pointsToSpend, userId]);
         });
 
-        const updatedUser = await User.getById(1);
+        const updatedUser = await User.getById(userId);
         res.json({
             message: 'Stats updated',
             user: {
@@ -79,14 +81,15 @@ export const allocateStats = async (req, res) => {
 
 export const resetProgress = async (req, res) => {
     try {
+        const userId = req.dbUserId;
         await db.transaction(async (tx) => {
             await tx.run(`
         UPDATE users 
         SET level = 1, xp = 0, total_xp_earned = 0, strength = 10, creation = 10, network = 10, vitality = 10, intelligence = 10, stat_points = 0, updated_at = CURRENT_TIMESTAMP
-        WHERE id = 1
-      `);
-            await tx.run('DELETE FROM quests');
-            await tx.run('DELETE FROM items');
+        WHERE id = ?
+      `, [userId]);
+            await tx.run('DELETE FROM quests WHERE user_id = ?', [userId]);
+            await tx.run('DELETE FROM items WHERE user_id = ?', [userId]);
         });
 
         res.json({ message: 'Progress reset successfully', user: { level: 1, xp: 0, totalXpEarned: 0 } });
@@ -98,10 +101,11 @@ export const resetProgress = async (req, res) => {
 
 export const getAchievements = async (req, res) => {
     try {
-        const user = await User.getById(1);
-        const questCount = await db.get('SELECT COUNT(*) as count FROM quests WHERE status = ?', ['completed']);
-        const itemCount = await db.get('SELECT COUNT(*) as count FROM items');
-        const legendaryCount = await db.get(`SELECT COUNT(*) as count FROM items WHERE rarity = 'legendary' OR rarity = 'mythic'`);
+        const userId = req.dbUserId;
+        const user = await User.getById(userId);
+        const questCount = await db.get('SELECT COUNT(*) as count FROM quests WHERE status = ? AND user_id = ?', ['completed', userId]);
+        const itemCount = await db.get('SELECT COUNT(*) as count FROM items WHERE user_id = ?', [userId]);
+        const legendaryCount = await db.get(`SELECT COUNT(*) as count FROM items WHERE (rarity = 'legendary' OR rarity = 'mythic') AND user_id = ?`, [userId]);
 
         const achievements = [
             { id: 'first_quest', name: 'First Steps', description: 'Complete your first quest', unlocked: questCount.count >= 1, progress: Math.min(1, questCount.count), max: 1 },

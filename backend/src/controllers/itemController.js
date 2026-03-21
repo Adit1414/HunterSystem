@@ -3,27 +3,24 @@ import Item from '../models/Item.js';
 
 export const getAllItems = async (req, res) => {
     try {
+        const userId = req.dbUserId;
         const { rarity, type, sortBy } = req.query;
 
         if (!sortBy || sortBy === 'rarity') {
-            const items = await Item.getAll({ rarity, type });
-            const stats = await Item.getStats();
+            const items = await Item.getAll({ rarity, type, user_id: userId });
+            const stats = await Item.getStats(userId);
             res.json({ items, stats: stats.overall });
         } else {
-            let query = 'SELECT * FROM items';
-            const conditions = [];
-            const params = [];
+            let query = 'SELECT * FROM items WHERE user_id = ?';
+            const params = [userId];
 
             if (rarity) {
-                conditions.push('rarity = ?');
+                query += ' AND rarity = ?';
                 params.push(rarity);
             }
             if (type) {
-                conditions.push('type = ?');
+                query += ' AND type = ?';
                 params.push(type);
-            }
-            if (conditions.length > 0) {
-                query += ' WHERE ' + conditions.join(' AND ');
             }
 
             if (sortBy === 'newest') query += ' ORDER BY obtained_at DESC';
@@ -32,7 +29,7 @@ export const getAllItems = async (req, res) => {
             else query += ' ORDER BY obtained_at DESC';
 
             const items = await db.query(query, params);
-            const stats = await Item.getStats();
+            const stats = await Item.getStats(userId);
             res.json({ items, stats: stats.overall });
         }
     } catch (error) {
@@ -43,7 +40,7 @@ export const getAllItems = async (req, res) => {
 
 export const getItemById = async (req, res) => {
     try {
-        const item = await Item.getById(req.params.id);
+        const item = await Item.getById(req.params.id, req.dbUserId);
         if (!item) return res.status(404).json({ error: 'Item not found' });
         res.json({ item });
     } catch (error) {
@@ -54,7 +51,7 @@ export const getItemById = async (req, res) => {
 
 export const deleteItem = async (req, res) => {
     try {
-        const item = await Item.getById(req.params.id);
+        const item = await Item.getById(req.params.id, req.dbUserId);
         if (!item) return res.status(404).json({ error: 'Item not found' });
 
         await Item.delete(req.params.id);
@@ -70,8 +67,8 @@ export const chooseItem = async (req, res) => {
         const { choiceId, itemData } = req.body;
         if (!itemData) return res.status(400).json({ error: 'Item data required' });
 
-        await Item.create(itemData);
-        const item = await Item.getById(itemData.id);
+        await Item.create({ ...itemData, user_id: req.dbUserId });
+        const item = await Item.getById(itemData.id, req.dbUserId);
         res.json({ message: 'Item claimed successfully', item });
     } catch (error) {
         console.error('Error claiming item:', error);
@@ -81,7 +78,7 @@ export const chooseItem = async (req, res) => {
 
 export const getItemStats = async (req, res) => {
     try {
-        const stats = await Item.getStats();
+        const stats = await Item.getStats(req.dbUserId);
         res.json({
             overall: { total: stats.overall.total, uniqueTypes: stats.overall.uniqueTypes },
             rarityDistribution: {

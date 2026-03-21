@@ -7,12 +7,17 @@ import db from '../config/database.js';
 
 export class Quest {
   /**
-   * Get all quests
+   * Get all quests (scoped by user_id)
    */
   static async getAll(filters = {}) {
     let query = 'SELECT * FROM quests';
     const conditions = [];
     const params = [];
+
+    if (filters.user_id) {
+      conditions.push('user_id = ?');
+      params.push(filters.user_id);
+    }
 
     if (filters.status) {
       conditions.push('status = ?');
@@ -39,9 +44,12 @@ export class Quest {
   }
 
   /**
-   * Get quest by ID
+   * Get quest by ID (optionally scoped by user_id for authorization)
    */
-  static async getById(id) {
+  static async getById(id, userId = null) {
+    if (userId) {
+      return await db.get('SELECT * FROM quests WHERE id = ? AND user_id = ?', [id, userId]);
+    }
     return await db.get('SELECT * FROM quests WHERE id = ?', [id]);
   }
 
@@ -49,12 +57,12 @@ export class Quest {
    * Create new quest
    */
   static async create(questData) {
-    const { id, title, description, difficulty, xp_reward, due_date, attribute } = questData;
+    const { id, user_id, title, description, difficulty, xp_reward, due_date, attribute } = questData;
 
     return await db.run(`
-      INSERT INTO quests (id, title, description, difficulty, xp_reward, due_date, status, attribute)
-      VALUES (?, ?, ?, ?, ?, ?, 'active', ?)
-    `, [id, title, description, difficulty, xp_reward, due_date || null, attribute || 'strength']);
+      INSERT INTO quests (id, user_id, title, description, difficulty, xp_reward, due_date, status, attribute)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?)
+    `, [id, user_id, title, description, difficulty, xp_reward, due_date || null, attribute || 'strength']);
   }
 
   /**
@@ -108,17 +116,20 @@ export class Quest {
   }
 
   /**
-   * Get recent E-rank quests (for anti-grind)
+   * Get recent E-rank quests (for anti-grind, scoped by user)
    */
-  static async getRecentEasyQuests() {
+  static async getRecentEasyQuests(userId = null) {
+    const userFilter = userId ? ' AND user_id = ?' : '';
+    const params = userId ? [userId] : [];
+
     if (db.type === 'postgres') {
       return await db.get(`
         SELECT COUNT(*) as count 
         FROM quests 
         WHERE difficulty = 'E' 
         AND status = 'completed'
-        AND completed_at > NOW() - INTERVAL '1 day'
-      `);
+        AND completed_at > NOW() - INTERVAL '1 day'${userFilter}
+      `, params);
     } else {
       // SQLite
       return await db.get(`
@@ -126,30 +137,34 @@ export class Quest {
       FROM quests 
       WHERE difficulty = 'E' 
       AND status = 'completed'
-      AND completed_at > datetime('now', '-24 hours')
-    `);
+      AND completed_at > datetime('now', '-24 hours')${userFilter}
+    `, params);
     }
   }
 
   /**
-   * Get archived quests (recent completed/failed)
+   * Get archived quests (recent completed/failed, scoped by user)
    */
-  static async getArchived(limit = 10) {
+  static async getArchived(limit = 10, userId = null) {
+    const userFilter = userId ? ' AND user_id = ?' : '';
+
     if (db.type === 'postgres') {
+      const params = userId ? [userId, limit] : [limit];
       return await db.query(`
           SELECT * FROM quests 
-          WHERE status IN ('completed', 'failed')
+          WHERE status IN ('completed', 'failed')${userFilter}
           ORDER BY completed_at DESC
-          LIMIT $1
-        `, [limit]);
+          LIMIT $${userId ? '2' : '1'}
+        `, params);
     } else {
       // SQLite uses ?
+      const params = userId ? [userId, limit] : [limit];
       return await db.query(`
           SELECT * FROM quests 
-          WHERE status IN ('completed', 'failed')
+          WHERE status IN ('completed', 'failed')${userFilter}
           ORDER BY completed_at DESC
           LIMIT ?
-        `, [limit]);
+        `, params);
     }
   }
 }

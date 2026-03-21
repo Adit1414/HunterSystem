@@ -37,57 +37,60 @@ export async function checkAndResetDailyQuests() {
 
         console.log(`[DailyQuestService] Processing daily reset for ${today} (Last reset: ${lastReset})`);
 
+        // Get all users
+        const users = await db.query('SELECT id FROM users');
+
         await db.transaction(async (tx) => {
-            // 1. If there's a previous day, evaluate penalty
+            // 1. If there's a previous day, evaluate penalty for each user
             if (lastReset) {
-                const completedCountRes = await tx.get(`
-          SELECT COUNT(*) as count 
-          FROM quests 
-          WHERE type = 'daily' AND status = 'completed'
-        `);
-                const completedCount = parseInt(completedCountRes.count) || 0;
+                for (const user of users) {
+                    const completedCountRes = await tx.get(`
+                        SELECT COUNT(*) as count 
+                        FROM quests 
+                        WHERE type = 'daily' AND status = 'completed' AND user_id = ?
+                    `, [user.id]);
+                    const completedCount = parseInt(completedCountRes.count) || 0;
 
-                console.log(`[DailyQuestService] Found ${completedCount} completed daily quests since last reset.`);
+                    console.log(`[DailyQuestService] User ${user.id}: ${completedCount} completed daily quests since last reset.`);
 
-                if (completedCount < 3) {
-                    console.log('[DailyQuestService] Penalty applied: -1 to all stats for failing 3/5 daily quests!');
+                    if (completedCount < 3) {
+                        console.log(`[DailyQuestService] Penalty applied to user ${user.id}: -1 to all stats!`);
 
-                    await tx.run(`
-            UPDATE users 
-            SET 
-              strength = CASE WHEN strength > 1 THEN strength - 1 ELSE 1 END,
-              creation = CASE WHEN creation > 1 THEN creation - 1 ELSE 1 END,
-              network = CASE WHEN network > 1 THEN network - 1 ELSE 1 END,
-              vitality = CASE WHEN vitality > 1 THEN vitality - 1 ELSE 1 END,
-              intelligence = CASE WHEN intelligence > 1 THEN intelligence - 1 ELSE 1 END
-            WHERE id = 1
-          `);
-                } else {
-                    console.log('[DailyQuestService] Penalty avoided! Completed >= 3 daily quests.');
+                        await tx.run(`
+                            UPDATE users 
+                            SET 
+                              strength = CASE WHEN strength > 1 THEN strength - 1 ELSE 1 END,
+                              creation = CASE WHEN creation > 1 THEN creation - 1 ELSE 1 END,
+                              network = CASE WHEN network > 1 THEN network - 1 ELSE 1 END,
+                              vitality = CASE WHEN vitality > 1 THEN vitality - 1 ELSE 1 END,
+                              intelligence = CASE WHEN intelligence > 1 THEN intelligence - 1 ELSE 1 END
+                            WHERE id = ?
+                        `, [user.id]);
+                    } else {
+                        console.log(`[DailyQuestService] User ${user.id}: Penalty avoided!`);
+                    }
                 }
             }
 
-            // 2. Clear out all existing daily quests (whether active, completed, or failed)
+            // 2. Clear out all existing daily quests
             await tx.run(`DELETE FROM quests WHERE type = 'daily'`);
 
-            // 3. Create the 5 new daily quests for today
-            for (const tpl of DAILY_QUESTS) {
-                await tx.run(`
-          INSERT INTO quests (id, title, description, difficulty, xp_reward, status, type, attribute)
-          VALUES (?, ?, ?, ?, ?, 'active', 'daily', ?)
-        `, [randomUUID(), tpl.title, tpl.description, tpl.difficulty, tpl.xp_reward, tpl.attribute]);
+            // 3. Create 5 new daily quests for each user
+            for (const user of users) {
+                for (const tpl of DAILY_QUESTS) {
+                    await tx.run(`
+                        INSERT INTO quests (id, user_id, title, description, difficulty, xp_reward, status, type, attribute)
+                        VALUES (?, ?, ?, ?, ?, ?, 'active', 'daily', ?)
+                    `, [randomUUID(), user.id, tpl.title, tpl.description, tpl.difficulty, tpl.xp_reward, tpl.attribute]);
+                }
             }
 
             // 4. Update the tracker
             await tx.run(`
-        INSERT INTO system_config (key, value) 
-        VALUES ('last_daily_reset', ?) 
-        ON CONFLICT(key) DO UPDATE SET value = ?
-      `, [today, today]);
-
-            // For SQLite, ON CONFLICT requires UNIQUE constraint, but primary key is enough.
-            // Wait, SQLite syntax for upsert is: `INSERT INTO ... ON CONFLICT(...) DO UPDATE SET ...`
-            // Wait, Postgres upsert is also `ON CONFLICT`.
+                INSERT INTO system_config (key, value) 
+                VALUES ('last_daily_reset', ?) 
+                ON CONFLICT(key) DO UPDATE SET value = ?
+            `, [today, today]);
         });
 
         console.log('[DailyQuestService] Daily reset completed successfully.');

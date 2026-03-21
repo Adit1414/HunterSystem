@@ -1,9 +1,11 @@
 /**
  * API Service
  * Handles all backend communication
+ * Auth tokens are automatically attached via interceptor
  */
 
 import axios from 'axios';
+import supabase from './supabaseClient.js';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -14,9 +16,17 @@ const api = axios.create({
   },
 });
 
-// Request interceptor for logging
+// Request interceptor — attach auth token
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        config.headers.Authorization = `Bearer ${session.access_token}`;
+      }
+    } catch (err) {
+      console.warn('Failed to get auth session for API request:', err);
+    }
     console.log(`API Request: ${config.method.toUpperCase()} ${config.url}`);
     return config;
   },
@@ -29,6 +39,11 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // If 401, session may have expired — redirect to login
+    if (error.response?.status === 401) {
+      console.warn('Unauthorized — session may have expired');
+      window.location.href = '/login';
+    }
     console.error('API Error:', error.response?.data || error.message);
     return Promise.reject(error);
   }

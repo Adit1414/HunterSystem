@@ -241,7 +241,8 @@ export class User {
         SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
         SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed
       FROM quests
-    `);
+      WHERE user_id = ?
+    `, [id]);
 
     const itemStats = await db.get(`
       SELECT 
@@ -252,7 +253,8 @@ export class User {
         SUM(CASE WHEN rarity = 'rare' THEN 1 ELSE 0 END) as rare,
         SUM(CASE WHEN rarity = 'common' THEN 1 ELSE 0 END) as common
       FROM items
-    `);
+      WHERE user_id = ?
+    `, [id]);
 
     return { quests: questStats, items: itemStats };
   }

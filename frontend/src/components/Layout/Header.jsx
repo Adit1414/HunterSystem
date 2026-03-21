@@ -1,7 +1,7 @@
 import React from 'react';
 import './Header.css';
 
-function Header({ user, activeView, setActiveView, onRefresh }) {
+function Header({ user, activeView, setActiveView, onRefresh, onSignOut }) {
     return (
         <header className="header">
             <div className='header-container'>
@@ -41,6 +41,9 @@ function Header({ user, activeView, setActiveView, onRefresh }) {
                     </div>
                 )}
                 <button className='btn-icon' onClick={onRefresh} title="Refresh">🔄️</button>
+                {onSignOut && (
+                    <button className='btn-icon' onClick={onSignOut} title="Sign Out">🚪</button>
+                )}
             </div>
         </header>
     );

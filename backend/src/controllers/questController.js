@@ -10,7 +10,7 @@ import { GAME_CONSTANTS } from '../config/gameConstants.js';
 export const getAllQuests = async (req, res) => {
     try {
         const { status, difficulty, type } = req.query;
-        const quests = await Quest.getAll({ status, difficulty, type });
+        const quests = await Quest.getAll({ status, difficulty, type, user_id: req.dbUserId });
         res.json({ quests });
     } catch (error) {
         console.error('Error fetching quests:', error);
@@ -20,7 +20,7 @@ export const getAllQuests = async (req, res) => {
 
 export const getDailyQuests = async (req, res) => {
     try {
-        const quests = await Quest.getAll({ type: 'daily' });
+        const quests = await Quest.getAll({ type: 'daily', user_id: req.dbUserId });
         const now = new Date();
         const midnight = new Date();
         midnight.setHours(24, 0, 0, 0);
@@ -39,7 +39,7 @@ export const getDailyQuests = async (req, res) => {
 
 export const getArchivedQuests = async (req, res) => {
     try {
-        const quests = await Quest.getArchived(10);
+        const quests = await Quest.getArchived(10, req.dbUserId);
         res.json({ quests });
     } catch (error) {
         console.error('Error fetching archived quests:', error);
@@ -49,7 +49,7 @@ export const getArchivedQuests = async (req, res) => {
 
 export const getQuestById = async (req, res) => {
     try {
-        const quest = await Quest.getById(req.params.id);
+        const quest = await Quest.getById(req.params.id, req.dbUserId);
         if (!quest) return res.status(404).json({ error: 'Quest not found' });
         res.json({ quest });
     } catch (error) {
@@ -60,6 +60,7 @@ export const getQuestById = async (req, res) => {
 
 export const createQuest = async (req, res) => {
     try {
+        const userId = req.dbUserId;
         const { title, description, difficulty, dueDate, attribute } = req.body;
         if (!title || !difficulty) return res.status(400).json({ error: 'Title and difficulty are required' });
 
@@ -75,6 +76,7 @@ export const createQuest = async (req, res) => {
         const questId = randomUUID();
         await Quest.create({
             id: questId,
+            user_id: userId,
             title,
             description: finalDescription,
             difficulty,
@@ -83,7 +85,7 @@ export const createQuest = async (req, res) => {
             attribute: attribute || 'strength'
         });
 
-        const quest = await Quest.getById(questId);
+        const quest = await Quest.getById(questId, userId);
         res.status(201).json({ quest });
     } catch (error) {
         console.error('Error creating quest:', error);
@@ -93,8 +95,9 @@ export const createQuest = async (req, res) => {
 
 export const updateQuest = async (req, res) => {
     try {
+        const userId = req.dbUserId;
         const { title, description, difficulty, dueDate, status } = req.body;
-        const quest = await Quest.getById(req.params.id);
+        const quest = await Quest.getById(req.params.id, userId);
         if (!quest) return res.status(404).json({ error: 'Quest not found' });
         if (quest.status !== 'active') return res.status(400).json({ error: 'Cannot edit completed or failed quests' });
 
@@ -113,7 +116,7 @@ export const updateQuest = async (req, res) => {
         if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'No fields to update' });
 
         await Quest.update(req.params.id, updates);
-        const updatedQuest = await Quest.getById(req.params.id);
+        const updatedQuest = await Quest.getById(req.params.id, userId);
         res.json({ quest: updatedQuest });
     } catch (error) {
         console.error('Error updating quest:', error);
@@ -123,7 +126,7 @@ export const updateQuest = async (req, res) => {
 
 export const deleteQuest = async (req, res) => {
     try {
-        const quest = await Quest.getById(req.params.id);
+        const quest = await Quest.getById(req.params.id, req.dbUserId);
         if (!quest) return res.status(404).json({ error: 'Quest not found' });
 
         await Quest.delete(req.params.id);
@@ -136,13 +139,14 @@ export const deleteQuest = async (req, res) => {
 
 export const completeQuest = async (req, res) => {
     try {
-        const quest = await Quest.getById(req.params.id);
+        const userId = req.dbUserId;
+        const quest = await Quest.getById(req.params.id, userId);
         if (!quest) return res.status(404).json({ error: 'Quest not found' });
         if (quest.status !== 'active') return res.status(400).json({ error: 'Quest is not active' });
 
-        const user = await User.getById(1);
+        const user = await User.getById(userId);
         const completedOnTime = quest.due_date ? new Date() <= new Date(quest.due_date) : false;
-        const recentEasyQuests = await Quest.getRecentEasyQuests();
+        const recentEasyQuests = await Quest.getRecentEasyQuests(userId);
         const recentCount = recentEasyQuests ? recentEasyQuests.count : 0;
 
         const xpGained = calculateQuestXP(quest, { completedOnTime, recentEasyQuests: recentCount });
@@ -162,11 +166,11 @@ export const completeQuest = async (req, res) => {
         await db.transaction(async (tx) => {
             await tx.run(`UPDATE quests SET status = 'completed', completed_at = CURRENT_TIMESTAMP WHERE id = ?`, [quest.id]);
             for (const item of rewards.items) {
-                await tx.run(`INSERT INTO items (id, name, description, rarity, type, obtained_at) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`, [item.id, item.name, item.description, item.rarity, item.type]);
+                await tx.run(`INSERT INTO items (id, user_id, name, description, rarity, type, obtained_at) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`, [item.id, userId, item.name, item.description, item.rarity, item.type]);
             }
         });
 
-        const updatedUser = await User.getById(1);
+        const updatedUser = await User.getById(userId);
 
         res.json({
             message: 'Quest completed!',
@@ -201,7 +205,8 @@ export const completeQuest = async (req, res) => {
 
 export const failQuest = async (req, res) => {
     try {
-        const quest = await Quest.getById(req.params.id);
+        const userId = req.dbUserId;
+        const quest = await Quest.getById(req.params.id, userId);
         if (!quest) return res.status(404).json({ error: 'Quest not found' });
         if (quest.status !== 'active') return res.status(400).json({ error: 'Quest is not active' });
 
@@ -213,17 +218,17 @@ export const failQuest = async (req, res) => {
         let newValue = 0;
 
         if (penaltyApplied) {
-            const user = await User.getById(1);
+            const user = await User.getById(userId);
             newValue = Math.max(0, (user[attributeTarget] || 0) - 1);
 
             await db.run(`
           UPDATE users 
           SET ${attributeTarget} = ?, updated_at = CURRENT_TIMESTAMP
-          WHERE id = 1
-        `, [newValue]);
+          WHERE id = ?
+        `, [newValue, userId]);
         }
 
-        const updatedUser = await User.getById(1);
+        const updatedUser = await User.getById(userId);
 
         res.json({
             message: 'Quest failed',
