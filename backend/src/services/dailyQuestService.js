@@ -6,7 +6,7 @@ import cron from 'node-cron';
 import db from '../config/database.js';
 import { randomUUID } from 'crypto';
 
-const DAILY_QUESTS = [
+export const DAILY_QUESTS = [
     { title: 'Brush routine', description: 'Complete your daily brush routine.', difficulty: 'E', attribute: 'vitality', xp_reward: 50 },
     { title: 'Study 1 hour', description: 'Spend at least 1 hour studying.', difficulty: 'E', attribute: 'intelligence', xp_reward: 50 },
     { title: '5 pushups or 30s plank', description: 'Do 5 pushups or a 30-second plank.', difficulty: 'E', attribute: 'strength', xp_reward: 50 },

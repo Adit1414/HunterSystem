@@ -8,7 +8,9 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { randomUUID } from 'crypto';
 import db from '../config/database.js';
+import { DAILY_QUESTS } from '../services/dailyQuestService.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -86,7 +88,7 @@ async function getOrCreateUser(authUserId) {
     return { ...orphanedUser, auth_user_id: authUserId };
   }
 
-  // No orphaned users — create a fresh user row
+  // No orphaned users — create a fresh user row + seed daily quests
   console.log(`🌱 Creating new user for auth_user_id=${authUserId}`);
   await db.run(`
     INSERT INTO users (auth_user_id, level, xp, total_xp_earned, strength, creation, network, vitality, intelligence, stat_points)
@@ -94,6 +96,16 @@ async function getOrCreateUser(authUserId) {
   `, [authUserId]);
 
   user = await db.get('SELECT * FROM users WHERE auth_user_id = ?', [authUserId]);
+
+  // Seed daily quests for the new user
+  console.log(`📋 Seeding daily quests for new user id=${user.id}`);
+  for (const tpl of DAILY_QUESTS) {
+    await db.run(`
+      INSERT INTO quests (id, user_id, title, description, difficulty, xp_reward, status, type, attribute)
+      VALUES (?, ?, ?, ?, ?, ?, 'active', 'daily', ?)
+    `, [randomUUID(), user.id, tpl.title, tpl.description, tpl.difficulty, tpl.xp_reward, tpl.attribute]);
+  }
+
   return user;
 }
 
