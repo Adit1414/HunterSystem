@@ -3,12 +3,6 @@
   <p>
     <strong>A Gamified Productivity Application Inspired by Solo Leveling</strong>
   </p>
-  <p>
-    <a href="#-features">Features</a> •
-    <a href="#-quick-start">Quick Start</a> •
-    <a href="#-game-mechanics">Game Mechanics</a> •
-    <a href="#-architecture">Architecture</a>
-  </p>
 </div>
 
 <hr />
@@ -17,7 +11,7 @@
 
 The **Hunter System** is a highly polished, gamified to-do list application engineered to turn your mundane daily tasks into epic RPG quests. Drawing deep inspiration from the popular anime "Solo Leveling", it combines effective task management with sophisticated progression and reward mechanics to keep you motivated and highly productive. 
 
-Built on a robust full-stack architecture utilizing **React, Node.js, Express, and SQLite**, it also natively supports **LLM inference via Ollama** for dynamically generated flavor text to heighten immersion.
+Built on a robust full-stack architecture utilizing **React, Node.js, Express, and SQLite**.
 
 ---
 
@@ -30,7 +24,7 @@ Built on a robust full-stack architecture utilizing **React, Node.js, Express, a
 
 ### 📈 Dynamic Progression Engine
 - **Attribute Balancing:** Your core stats (Strength, Creation, Network, Vitality, and Intelligence) dynamically level up via quest completions.
-- **Level Curve:** Earn XP to level up. Progress scales exponentially to provide long-term engagement (`100 * N^1.5`).
+- **Level Curve:** Earn XP to level up. Progress scales exponentially to provide long-term engagement (`100 * N^1.1`).
 - **Penalty System:** Falling short on daily quests (-1 point deduction) or failing standard quests results in attribute deductions. 
 
 ### 💎 Advanced Loot Mechanics
@@ -118,19 +112,11 @@ Navigate to `http://localhost:3000` inside your browser to view the application!
 
 ---
 
-## 🤖 AI Setup (Optional)
-Unlock procedurally generated quest narratives and flavor texts without relying on template fallbacks:
-1. Download [Ollama](https://ollama.com/)
-2. Pull the model in your terminal: `ollama pull llama3.1:8b`
-3. Update `backend/.env` setting `OLLAMA_ENABLED=true` and `ENABLE_AI_FLAVOR_TEXT=true`. Restart your backend server.
-
----
-
 ## 🔮 Future Roadmap
-- [ ] Achievement and Badges Library
-- [ ] Boss Quests with custom interactive mechanics
-- [ ] Party/Guild System for multiplayer accountability
-- [ ] Granular Item Stats and equipment slots configuration
+- Achievement and Badges Library
+- Add effects to items
+- Party/Guild System for multiplayer accountability
+- Granular Item Stats and equipment slots configuration
 
 ---
 

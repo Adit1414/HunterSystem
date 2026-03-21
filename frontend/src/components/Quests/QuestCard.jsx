@@ -20,9 +20,31 @@ function QuestCard({ quest, onComplete, onFail }) {
         <div className="card quest-card" style={{ borderLeft: `4px solid ${borderColor}` }}>
             <div className="quest-header">
                 <div className="quest-badges">
-                    <span className={`badge badge-${quest.difficulty.toLowerCase()}`}>
+                    <span className={`badge badge-${quest.difficulty?.toLowerCase() || 'e'}`}>
                         {quest.difficulty}-Rank
                     </span>
+                    {quest.attribute && (
+                        <span 
+                            className="badge badge-attribute" 
+                            style={{ 
+                                background: 'var(--bg-tertiary)',
+                                color: quest.attribute === 'strength' ? 'var(--danger)' :
+                                       quest.attribute === 'intelligence' ? 'var(--accent-primary)' :
+                                       quest.attribute === 'vitality' ? 'var(--success)' :
+                                       quest.attribute === 'creation' ? 'var(--accent-gold)' :
+                                       quest.attribute === 'network' ? 'var(--rarity-mythic)' : 'var(--text-primary)',
+                                border: `1px solid ${
+                                       quest.attribute === 'strength' ? 'var(--danger)' :
+                                       quest.attribute === 'intelligence' ? 'var(--accent-primary)' :
+                                       quest.attribute === 'vitality' ? 'var(--success)' :
+                                       quest.attribute === 'creation' ? 'var(--accent-gold)' :
+                                       quest.attribute === 'network' ? 'var(--rarity-mythic)' : 'var(--border-color)'
+                                }`
+                            }}
+                        >
+                            {quest.attribute.charAt(0).toUpperCase() + quest.attribute.slice(1)}
+                        </span>
+                    )}
                     {quest.gold_reward > 0 && (
                         <span className="badge badge-gold">
                             💰 {quest.gold_reward}

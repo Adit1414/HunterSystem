@@ -23,7 +23,7 @@ export const getDailyQuests = async (req, res) => {
         const quests = await Quest.getAll({ type: 'daily', user_id: req.dbUserId });
         const now = new Date();
         const midnight = new Date();
-        midnight.setHours(24, 0, 0, 0);
+        midnight.setUTCHours(24, 0, 0, 0);
         const msToMidnight = midnight.getTime() - now.getTime();
 
         res.json({

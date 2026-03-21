@@ -23,11 +23,11 @@ function DailyQuests({ onQuestComplete }) {
     useEffect(() => {
         fetchDailyData();
 
-        // Timer for midnight countdown
+        // Timer for UTC midnight countdown
         const timer = setInterval(() => {
             const now = new Date();
             const midnight = new Date();
-            midnight.setHours(24, 0, 0, 0);
+            midnight.setUTCHours(24, 0, 0, 0);
             const diff = midnight - now;
 
             if (diff <= 0) {
@@ -76,7 +76,7 @@ function DailyQuests({ onQuestComplete }) {
                         <p>
                             {isSafe
                                 ? "Penalty avoided! Good job fulfilling your daily duties."
-                                : "Warning: Complete at least 3 quests before midnight to avoid a penalty (-1 all stats)."}
+                                : "Warning: Complete at least 3 quests before 5:30am to avoid a penalty (-1 all stats)."}
                         </p>
                     </div>
                     <div className="progress-bar-container">
