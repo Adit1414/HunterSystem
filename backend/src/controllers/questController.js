@@ -124,6 +124,30 @@ export const updateQuest = async (req, res) => {
     }
 };
 
+export const updateDailyQuest = async (req, res) => {
+    try {
+        const userId = req.dbUserId;
+        const { title, description } = req.body;
+        const quest = await Quest.getById(req.params.id, userId);
+        if (!quest) return res.status(404).json({ error: 'Quest not found' });
+        if (quest.type !== 'daily') return res.status(400).json({ error: 'This endpoint is only for daily quests' });
+        if (quest.status !== 'active') return res.status(400).json({ error: 'Cannot edit completed daily quests' });
+
+        const updates = {};
+        if (title !== undefined && title.trim() !== '') updates.title = title.trim();
+        if (description !== undefined && description.trim() !== '') updates.description = description.trim();
+
+        if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'Provide a title or description to update' });
+
+        await Quest.update(req.params.id, updates);
+        const updatedQuest = await Quest.getById(req.params.id, userId);
+        res.json({ quest: updatedQuest });
+    } catch (error) {
+        console.error('Error updating daily quest:', error);
+        res.status(500).json({ error: 'Failed to update daily quest' });
+    }
+};
+
 export const deleteQuest = async (req, res) => {
     try {
         const quest = await Quest.getById(req.params.id, req.dbUserId);
@@ -149,7 +173,7 @@ export const completeQuest = async (req, res) => {
         const recentEasyQuests = await Quest.getRecentEasyQuests(userId);
         const recentCount = recentEasyQuests ? recentEasyQuests.count : 0;
 
-        const xpGained = calculateQuestXP(quest, { completedOnTime, recentEasyQuests: recentCount });
+        const xpGained = calculateQuestXP(quest, user.level, { completedOnTime, recentEasyQuests: recentCount });
         const xpResult = await User.addXp(user.id, xpGained, quest.attribute || 'strength');
 
         const specialRewards = [];

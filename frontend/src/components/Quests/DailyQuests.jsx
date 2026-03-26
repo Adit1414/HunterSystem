@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { getDailyQuests, completeQuest } from '../../services/api';
+import { getDailyQuests, completeQuest, updateDailyQuest } from '../../services/api';
 import QuestCard from './QuestCard';
+import EditDailyQuestModal from '../Modals/EditDailyQuestModal';
 import './DailyQuests.css';
 
 function DailyQuests({ onQuestComplete }) {
     const [quests, setQuests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [timeLeft, setTimeLeft] = useState('');
+    const [editingQuest, setEditingQuest] = useState(null);
 
     const fetchDailyData = async () => {
         try {
@@ -57,6 +59,21 @@ function DailyQuests({ onQuestComplete }) {
         }
     };
 
+    const handleEdit = (quest) => {
+        setEditingQuest(quest);
+    };
+
+    const handleSaveEdit = async (questId, updates) => {
+        try {
+            await updateDailyQuest(questId, updates);
+            setEditingQuest(null);
+            fetchDailyData(); // Refresh to show updated quest
+        } catch (error) {
+            console.error('Failed to update daily quest:', error);
+            alert('Failed to update quest. See console for details.');
+        }
+    };
+
     const completedCount = quests.filter(q => q.status === 'completed').length;
     const isSafe = completedCount >= 3;
 
@@ -97,6 +114,7 @@ function DailyQuests({ onQuestComplete }) {
                             <QuestCard
                                 quest={quest}
                                 onComplete={quest.status === 'active' ? handleComplete : undefined}
+                                onEdit={quest.status === 'active' ? handleEdit : undefined}
                             />
                             {quest.status === 'completed' && (
                                 <div className="completed-overlay">
@@ -107,8 +125,17 @@ function DailyQuests({ onQuestComplete }) {
                     ))
                 )}
             </div>
+
+            {editingQuest && (
+                <EditDailyQuestModal
+                    quest={editingQuest}
+                    onSave={handleSaveEdit}
+                    onCancel={() => setEditingQuest(null)}
+                />
+            )}
         </div>
     );
 }
 
 export default DailyQuests;
+

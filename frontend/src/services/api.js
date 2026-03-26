@@ -98,6 +98,11 @@ export const updateQuest = async (id, questData) => {
   return response.data;
 };
 
+export const updateDailyQuest = async (id, questData) => {
+  const response = await api.put(`/quests/daily/${id}`, questData);
+  return response.data;
+};
+
 export const deleteQuest = async (id) => {
   const response = await api.delete(`/quests/${id}`);
   return response.data;

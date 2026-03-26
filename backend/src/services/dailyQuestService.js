@@ -70,16 +70,26 @@ export async function checkAndResetDailyQuests() {
                 }
             }
 
-            // 2. Clear out all existing daily quests
-            await tx.run(`DELETE FROM quests WHERE type = 'daily'`);
-
-            // 3. Create 5 new daily quests for each user
+            // 2. For each user: reset existing daily quests OR create presets for new users
             for (const user of users) {
-                for (const tpl of DAILY_QUESTS) {
-                    await tx.run(`
-                        INSERT INTO quests (id, user_id, title, description, difficulty, xp_reward, status, type, attribute)
-                        VALUES (?, ?, ?, ?, ?, ?, 'active', 'daily', ?)
-                    `, [randomUUID(), user.id, tpl.title, tpl.description, tpl.difficulty, tpl.xp_reward, tpl.attribute]);
+                const existingCount = await tx.get(
+                    `SELECT COUNT(*) as count FROM quests WHERE type = 'daily' AND user_id = ?`, [user.id]
+                );
+
+                if (parseInt(existingCount.count) === 0) {
+                    // First-ever login: create from preset templates
+                    for (const tpl of DAILY_QUESTS) {
+                        await tx.run(`
+                            INSERT INTO quests (id, user_id, title, description, difficulty, xp_reward, status, type, attribute)
+                            VALUES (?, ?, ?, ?, ?, ?, 'active', 'daily', ?)
+                        `, [randomUUID(), user.id, tpl.title, tpl.description, tpl.difficulty, tpl.xp_reward, tpl.attribute]);
+                    }
+                } else {
+                    // Returning user: reset status to active, preserving their custom title/description
+                    await tx.run(
+                        `UPDATE quests SET status = 'active', completed_at = NULL WHERE type = 'daily' AND user_id = ?`,
+                        [user.id]
+                    );
                 }
             }
 

@@ -57,6 +57,14 @@ export const GAME_CONSTANTS = {
     DAILY_QUESTS: {
       REQUIRED_TO_AVOID_PENALTY: 3,
       PENALTY_DEDUCTION: 1 // Deduct 1 from all stats if failed
+    },
+
+    // Progressive XP scaling (20% boost every 10 levels starting at 20)
+    MILESTONE_XP_BOOST: {
+      LEVEL_INTERVAL: 10,
+      START_LEVEL: 20,
+      MAX_BOOST_LEVEL: 100,
+      MULTIPLIER: 1.2
     }
   },
 

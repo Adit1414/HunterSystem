@@ -199,3 +199,113 @@
     color: var(--text-tertiary);
     font-style: italic;
 }
+
+/* Edit Daily Quest Modal */
+.edit-daily-modal {
+    max-width: 520px;
+    text-align: left;
+}
+
+.edit-guidance-icon {
+    font-size: 3rem;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.edit-guidance-title {
+    font-size: 1.6rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+}
+
+.edit-guidance-body {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.edit-guidance-body p {
+    margin: 0 0 0.75rem 0;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.edit-guidance-body p:last-child {
+    margin-bottom: 0;
+}
+
+.edit-guidance-emphasis {
+    color: var(--text-primary) !important;
+    font-size: 1.05rem;
+}
+
+.edit-guidance-hint {
+    font-style: italic;
+    opacity: 0.7;
+    font-size: 0.9rem;
+}
+
+.edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.edit-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.edit-form-group label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+.edit-input,
+.edit-textarea {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-family: inherit;
+    transition: border-color 0.2s ease;
+}
+
+.edit-input:focus,
+.edit-textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(0, 217, 255, 0.15);
+}
+
+.edit-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Edit button on quest cards */
+.btn-edit-daily {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.85rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.btn-edit-daily:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    background: rgba(0, 217, 255, 0.1);
+}

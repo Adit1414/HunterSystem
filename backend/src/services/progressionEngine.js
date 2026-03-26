@@ -49,10 +49,11 @@ export function getXPForNextLevel(currentLevel) {
  * Includes bonuses and anti-grind mechanics
  * 
  * @param {Object} quest - Quest object with difficulty, dueDate
+ * @param {number} userLevel - Current level of the user
  * @param {Object} context - Additional context (completedOnTime, recentEasyQuests)
  * @returns {number} Final XP amount
  */
-export function calculateQuestXP(quest, context = {}) {
+export function calculateQuestXP(quest, userLevel = 1, context = {}) {
   const baseXP = BASE_XP[quest.difficulty];
   let multiplier = 1.0;
 
@@ -66,6 +67,14 @@ export function calculateQuestXP(quest, context = {}) {
   if (quest.difficulty === 'E' && context.recentEasyQuests > threshold) {
     const penalty = Math.min(GAME_CONSTANTS.PROGRESSION.ANTI_GRIND.PENALTY_MULTIPLIER, (context.recentEasyQuests - threshold) * 0.05);
     multiplier *= (1 - penalty);
+  }
+
+  // Progressive XP Scaling: 20% boost every 10 levels starting at 20, capped at level 100
+  const boostConfig = GAME_CONSTANTS.PROGRESSION.MILESTONE_XP_BOOST;
+  if (userLevel >= boostConfig.START_LEVEL) {
+    const cappedLevel = Math.min(userLevel, boostConfig.MAX_BOOST_LEVEL);
+    const milestones = Math.floor(cappedLevel / boostConfig.LEVEL_INTERVAL) - 1;
+    multiplier *= Math.pow(boostConfig.MULTIPLIER, milestones);
   }
 
   return Math.floor(baseXP * multiplier);
