@@ -9,9 +9,20 @@ import { GAME_CONSTANTS } from '../config/gameConstants.js';
 
 export const getAllQuests = async (req, res) => {
     try {
+        const userId = req.dbUserId;
+        const user = await User.getById(userId);
+        const userLevel = user ? user.level : 1;
+
         const { status, difficulty, type } = req.query;
-        const quests = await Quest.getAll({ status, difficulty, type, user_id: req.dbUserId });
-        res.json({ quests });
+        const quests = await Quest.getAll({ status, difficulty, type, user_id: userId });
+
+        // Add calculated XP to each quest
+        const enhancedQuests = quests.map(quest => ({
+            ...quest,
+            calculated_xp: calculateQuestXP(quest, userLevel, { completedOnTime: false, recentEasyQuests: 0 })
+        }));
+
+        res.json({ quests: enhancedQuests });
     } catch (error) {
         console.error('Error fetching quests:', error);
         res.status(500).json({ error: 'Failed to fetch quests' });
@@ -20,14 +31,25 @@ export const getAllQuests = async (req, res) => {
 
 export const getDailyQuests = async (req, res) => {
     try {
-        const quests = await Quest.getAll({ type: 'daily', user_id: req.dbUserId });
+        const userId = req.dbUserId;
+        const user = await User.getById(userId);
+        const userLevel = user ? user.level : 1;
+
+        const quests = await Quest.getAll({ type: 'daily', user_id: userId });
+
+        // Add calculated XP to each quest
+        const enhancedQuests = quests.map(quest => ({
+            ...quest,
+            calculated_xp: calculateQuestXP(quest, userLevel, { completedOnTime: false, recentEasyQuests: 0 })
+        }));
+
         const now = new Date();
         const midnight = new Date();
         midnight.setUTCHours(24, 0, 0, 0);
         const msToMidnight = midnight.getTime() - now.getTime();
 
         res.json({
-            quests,
+            quests: enhancedQuests,
             msToMidnight,
             resetAt: midnight.toISOString()
         });
@@ -49,9 +71,19 @@ export const getArchivedQuests = async (req, res) => {
 
 export const getQuestById = async (req, res) => {
     try {
-        const quest = await Quest.getById(req.params.id, req.dbUserId);
+        const userId = req.dbUserId;
+        const user = await User.getById(userId);
+        const userLevel = user ? user.level : 1;
+
+        const quest = await Quest.getById(req.params.id, userId);
         if (!quest) return res.status(404).json({ error: 'Quest not found' });
-        res.json({ quest });
+
+        const enhancedQuest = {
+            ...quest,
+            calculated_xp: calculateQuestXP(quest, userLevel, { completedOnTime: false, recentEasyQuests: 0 })
+        };
+
+        res.json({ quest: enhancedQuest });
     } catch (error) {
         console.error('Error fetching quest:', error);
         res.status(500).json({ error: 'Failed to fetch quest' });
@@ -85,8 +117,16 @@ export const createQuest = async (req, res) => {
             attribute: attribute || 'strength'
         });
 
+        const user = await User.getById(userId);
+        const userLevel = user ? user.level : 1;
+
         const quest = await Quest.getById(questId, userId);
-        res.status(201).json({ quest });
+        const enhancedQuest = {
+            ...quest,
+            calculated_xp: calculateQuestXP(quest, userLevel, { completedOnTime: false, recentEasyQuests: 0 })
+        };
+
+        res.status(201).json({ quest: enhancedQuest });
     } catch (error) {
         console.error('Error creating quest:', error);
         res.status(500).json({ error: 'Failed to create quest' });
@@ -116,8 +156,16 @@ export const updateQuest = async (req, res) => {
         if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'No fields to update' });
 
         await Quest.update(req.params.id, updates);
+
+        const user = await User.getById(userId);
+        const userLevel = user ? user.level : 1;
+
         const updatedQuest = await Quest.getById(req.params.id, userId);
-        res.json({ quest: updatedQuest });
+        const enhancedQuest = {
+            ...updatedQuest,
+            calculated_xp: calculateQuestXP(updatedQuest, userLevel, { completedOnTime: false, recentEasyQuests: 0 })
+        };
+        res.json({ quest: enhancedQuest });
     } catch (error) {
         console.error('Error updating quest:', error);
         res.status(500).json({ error: 'Failed to update quest' });
@@ -140,8 +188,16 @@ export const updateDailyQuest = async (req, res) => {
         if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'Provide a title or description to update' });
 
         await Quest.update(req.params.id, updates);
+
+        const user = await User.getById(userId);
+        const userLevel = user ? user.level : 1;
+
         const updatedQuest = await Quest.getById(req.params.id, userId);
-        res.json({ quest: updatedQuest });
+        const enhancedQuest = {
+            ...updatedQuest,
+            calculated_xp: calculateQuestXP(updatedQuest, userLevel, { completedOnTime: false, recentEasyQuests: 0 })
+        };
+        res.json({ quest: enhancedQuest });
     } catch (error) {
         console.error('Error updating daily quest:', error);
         res.status(500).json({ error: 'Failed to update daily quest' });

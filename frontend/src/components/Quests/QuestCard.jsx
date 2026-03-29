@@ -58,7 +58,9 @@ function QuestCard({ quest, onComplete, onFail, onEdit }) {
 
             <div className="quest-footer">
                 <div className="quest-rewards">
-                    <span className="xp-reward">+{quest.xp_reward} XP</span>
+                    <span className="xp-reward">
+                        +{quest.calculated_xp || quest.xp_reward} XP
+                    </span>
                 </div>
 
                 <div className="quest-actions" style={{ display: 'flex', gap: '8px' }}>

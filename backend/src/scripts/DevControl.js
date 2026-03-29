@@ -10,7 +10,7 @@ import { getXPForNextLevel, getRankName } from '../services/progressionEngine.js
 // 3. Run: node src/scripts/DevControl.js
 // 4. Restart your frontend/backend to see changes immediately.
 
-const TARGET_USER_ID = 2;
+const TARGET_USER_ID = 1;
 
 // --- OPTION 1: UPDATE PROGRESSION ---
 // Set NEW_TOTAL_XP to a number to update your Level and Rank automatically.
@@ -20,11 +20,11 @@ const NEW_TOTAL_XP = null; // Example: 5000
 // --- OPTION 2: UPDATE ATTRIBUTES ---
 // Set specific attributes to new values. Set to null to leave unchanged.
 const NEW_ATTRIBUTES = {
-    strength: 23,      // Example: 50
-    creation: 45,
-    network: 31,
-    vitality: 25,
-    intelligence: 76,
+    strength: 24,      // Example: 50
+    creation: 49,
+    network: 33,
+    vitality: 26,
+    intelligence: 78,
     stat_points: null    // Unspent points
 };
 
