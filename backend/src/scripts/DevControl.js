@@ -12,6 +12,7 @@ import { getXPForNextLevel, getRankName } from '../services/progressionEngine.js
 
 const TARGET_USER_ID = 1;
 // 14 is arhan
+// 1 is aditya
 
 // --- OPTION 1: UPDATE PROGRESSION ---
 // Set NEW_TOTAL_XP to a number to update your Level and Rank automatically.
