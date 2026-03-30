@@ -259,6 +259,28 @@ export async function initializeDatabase() {
       );
     `);
 
+    if (db.type === 'postgres') {
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS quest_history (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER,
+          quest_id TEXT,
+          type TEXT,
+          completed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    } else {
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS quest_history (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER,
+          quest_id TEXT,
+          type TEXT,
+          completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    }
+
     // System Config / Tracking for daily resets
     await db.exec(`
       CREATE TABLE IF NOT EXISTS system_config (
@@ -364,6 +386,39 @@ export async function initializeDatabase() {
       console.error('Migration Error (Auth columns):', err.message);
     }
     // ----------------------------------
+
+    // --- MIGRATION FOR QUEST HISTORY ---
+    try {
+      console.log('Migrating: Seeding quest_history from existing completed quests... (One time)');
+      if (db.type === 'postgres') {
+        // Postgres schema changes if necessary (id SERIAL)
+        await db.exec(`
+          CREATE TABLE IF NOT EXISTS quest_history (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER,
+            quest_id TEXT,
+            type TEXT,
+            completed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+        await db.exec(`
+          INSERT INTO quest_history (user_id, quest_id, type, completed_at)
+          SELECT user_id, id, type, completed_at FROM quests 
+          WHERE status = 'completed' AND type = 'daily'
+          ON CONFLICT DO NOTHING
+        `);
+      } else {
+        await db.exec(`
+          INSERT INTO quest_history (user_id, quest_id, type, completed_at)
+          SELECT user_id, id, type, completed_at FROM quests 
+          WHERE status = 'completed' AND type = 'daily'
+          AND id NOT IN (SELECT quest_id FROM quest_history)
+        `);
+      }
+    } catch (err) {
+      console.error('Migration Error (Quest History):', err.message);
+    }
+    // -----------------------------------
 
     console.log('✓ Database initialized successfully');
   }

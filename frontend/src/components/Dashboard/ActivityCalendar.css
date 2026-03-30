@@ -1,0 +1,73 @@
+.activity-calendar {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
+  margin-top: 2rem;
+}
+
+.calendar-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.calendar-header h3 {
+  margin-bottom: 0.5rem;
+}
+
+.calendar-header h4 {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+}
+
+.weekday-header {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  padding-bottom: 0.8rem;
+}
+
+.calendar-day {
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.calendar-day.padded {
+  background: transparent;
+}
+
+/* Grey for < 3 quests */
+.calendar-day.inactive-day {
+  background: rgba(128, 128, 128, 0.15);
+  color: var(--text-muted, #8b949e);
+  border: 1px solid rgba(128, 128, 128, 0.1);
+}
+
+/* Blue for >= 3 quests */
+.calendar-day.active-day {
+  background: rgba(59, 130, 246, 0.85); /* React blue */
+  color: white;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+  border: 1px solid rgba(59, 130, 246, 0.5);
+}
+
+.calendar-day:not(.padded):hover {
+  transform: translateY(-2px);
+  cursor: default;
+  filter: brightness(1.1);
+}

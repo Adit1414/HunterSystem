@@ -44,14 +44,18 @@ export const getDailyQuests = async (req, res) => {
         }));
 
         const now = new Date();
-        const midnight = new Date();
-        midnight.setUTCHours(24, 0, 0, 0);
-        const msToMidnight = midnight.getTime() - now.getTime();
+        const istOffsetMs = 5.5 * 60 * 60 * 1000;
+        const istNow = new Date(now.getTime() + istOffsetMs);
+        const istMidnight = new Date(istNow);
+        istMidnight.setUTCHours(24, 0, 0, 0);
+
+        const msToMidnight = istMidnight.getTime() - istNow.getTime();
+        const resetAtDate = new Date(istMidnight.getTime() - istOffsetMs);
 
         res.json({
             quests: enhancedQuests,
             msToMidnight,
-            resetAt: midnight.toISOString()
+            resetAt: resetAtDate.toISOString()
         });
     } catch (error) {
         console.error('Error fetching daily quests:', error);
@@ -244,7 +248,9 @@ export const completeQuest = async (req, res) => {
         const rewards = generateQuestRewards(quest.difficulty, specialRewards);
 
         await db.transaction(async (tx) => {
-            await tx.run(`UPDATE quests SET status = 'completed', completed_at = CURRENT_TIMESTAMP WHERE id = ?`, [quest.id]);
+            const nowIso = new Date().toISOString();
+            await tx.run(`UPDATE quests SET status = 'completed', completed_at = ? WHERE id = ?`, [nowIso, quest.id]);
+            await tx.run(`INSERT INTO quest_history (user_id, quest_id, type, completed_at) VALUES (?, ?, ?, ?)`, [userId, quest.id, quest.type, nowIso]);
             for (const item of rewards.items) {
                 await tx.run(`INSERT INTO items (id, user_id, name, description, rarity, type, obtained_at) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`, [item.id, userId, item.name, item.description, item.rarity, item.type]);
             }

@@ -16,8 +16,10 @@ export const DAILY_QUESTS = [
 
 function getTodayString() {
     const date = new Date();
-    // Use UTC date (format YYYY-MM-DD) to match UTC-based reset schedule
-    return date.toISOString().split('T')[0];
+    // Use IST date (UTC+5:30) to match local midnight schedule
+    const istOffsetMs = 5.5 * 60 * 60 * 1000;
+    const istDate = new Date(date.getTime() + istOffsetMs);
+    return istDate.toISOString().split('T')[0];
 }
 
 export async function checkAndResetDailyQuests() {
@@ -111,12 +113,14 @@ export function startDailyQuestCron() {
     // Run on startup just in case server was off during reset window
     checkAndResetDailyQuests();
 
-    // Run at 00:00, 00:10, 00:20, and 00:30 UTC (5:30, 5:40, 5:50, 6:00 AM IST)
-    // Multiple runs to handle the computer sleeping through the first check.
-    // The checkAndResetDailyQuests function prevents duplicate resets
-    // by checking the 'last_daily_reset' value in the DB.
-    cron.schedule('0,10,20,30 0 * * *', () => {
+    // Run at 00:00, 00:10, 00:20, and 00:30 IST
+    // IST is UTC+5:30, so 00:00 IST = 18:30 UTC.
+    // We schedule it at 18:30, 18:40, 18:50, 19:00 UTC (runs exactly at midnight IST)
+    cron.schedule('30,40,50 18 * * *', () => {
         checkAndResetDailyQuests();
     }, { timezone: 'UTC' });
-    console.log('⏰ Daily quest check scheduled (runs at 5:30, 5:40, 5:50, 6:00 AM IST).');
+    cron.schedule('0 19 * * *', () => {
+        checkAndResetDailyQuests();
+    }, { timezone: 'UTC' });
+    console.log('⏰ Daily quest check scheduled (runs at midnight IST).');
 }
