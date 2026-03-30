@@ -256,7 +256,51 @@ export class User {
       WHERE user_id = ?
     `, [id]);
 
-    return { quests: questStats, items: itemStats };
+    const dailyCompletions = await db.query(`
+      SELECT completed_at 
+      FROM quest_history
+      WHERE user_id = ? AND type = 'daily'
+    `, [id]);
+
+    const countsByDate = {};
+    const istOffsetMs = 5.5 * 60 * 60 * 1000;
+
+    dailyCompletions.forEach(q => {
+      if (!q.completed_at) return;
+      const qDate = new Date(q.completed_at);
+      const istDate = new Date(qDate.getTime() + istOffsetMs);
+      const dateStr = istDate.toISOString().split('T')[0];
+      countsByDate[dateStr] = (countsByDate[dateStr] || 0) + 1;
+    });
+
+    let currentStreak = 0;
+    const now = new Date();
+    const istNow = new Date(now.getTime() + istOffsetMs);
+    const todayStr = istNow.toISOString().split('T')[0];
+    
+    const istYesterday = new Date(istNow.getTime() - 86400000);
+    const yesterdayStr = istYesterday.toISOString().split('T')[0];
+
+    let checkDate = null;
+    if ((countsByDate[todayStr] || 0) >= 3) {
+      checkDate = new Date(istNow);
+    } else if ((countsByDate[yesterdayStr] || 0) >= 3) {
+      checkDate = new Date(istYesterday);
+    }
+
+    if (checkDate) {
+      while (true) {
+        const checkStr = checkDate.toISOString().split('T')[0];
+        if ((countsByDate[checkStr] || 0) >= 3) {
+          currentStreak++;
+          checkDate.setUTCDate(checkDate.getUTCDate() - 1);
+        } else {
+          break;
+        }
+      }
+    }
+
+    return { quests: questStats, items: itemStats, streak: currentStreak, history: countsByDate };
   }
 }
 
