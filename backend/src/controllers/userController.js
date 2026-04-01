@@ -32,7 +32,7 @@ export const getUserProgress = async (req, res) => {
                     statPoints: user.stat_points || 0
                 }
             },
-            stats: { quests: stats.quests, items: stats.items }
+            stats: { quests: stats.quests, items: stats.items, streak: stats.streak, history: stats.history }
         });
     } catch (error) {
         console.error('Error fetching user:', error);
