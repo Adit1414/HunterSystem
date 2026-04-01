@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './ActivityCalendar.css';
 
 const ActivityCalendar = ({ history }) => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
   
   const firstDay = new Date(year, month, 1);
   const startingDayOfWeek = firstDay.getDay(); // 0 (Sun) to 6 (Sat)
@@ -41,11 +42,23 @@ const ActivityCalendar = ({ history }) => {
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const currentMonthName = monthNames[month];
 
+  const handlePrevMonth = () => {
+    setCurrentDate(new Date(year, month - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(new Date(year, month + 1, 1));
+  };
+
   return (
     <div className="activity-calendar">
       <div className="calendar-header">
         <h3 className="section-title">Daily Quests Activity Calendar</h3>
-        <h4>{currentMonthName} {year}</h4>
+        <div className="calendar-navigation">
+          <button className="nav-btn" onClick={handlePrevMonth}>&larr;</button>
+          <h4>{currentMonthName} {year}</h4>
+          <button className="nav-btn" onClick={handleNextMonth}>&rarr;</button>
+        </div>
       </div>
       <div className="calendar-grid">
         <div className="weekday-header">Sun</div>
