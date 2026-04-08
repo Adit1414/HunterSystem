@@ -41,7 +41,7 @@ class DBAdapter {
       // Add error handler to pool to avoid crashing on idle connection errors
       this.pool.on('error', (err) => {
         console.error('Unexpected error on idle client', err);
-        process.exit(-1);
+        // DO NOT exit the process. Let it stay alive so the web server doesn't crash.
       });
     } else {
       console.log('🔌 Connecting to SQLite (Local)...');
