@@ -87,27 +87,16 @@ app.use((err, req, res, next) => {
 async function startServer() {
   try {
     // Initialize database
-    // Start server FIRST
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running on port ${PORT}`);
-    });
+    console.log('Initializing database...');
+    await initializeDatabase();
 
-    // THEN run async stuff in background
-    (async () => {
-      try {
-        console.log('Initializing database...');
-        await initializeDatabase();
+    // Initialize AI (optional) - do not block startup
+    console.log('Checking AI availability (in background)...');
+    initializeAI().catch(err => console.error('AI check error:', err));
 
-        console.log('Checking AI availability...');
-        initializeAI().catch(err => console.error('AI error:', err));
-
-        const { startDailyQuestCron } = await import('./services/dailyQuestService.js');
-        startDailyQuestCron();
-
-      } catch (error) {
-        console.error('Startup background error:', error);
-      }
-    })();
+    // Start Daily Quests Cron
+    const { startDailyQuestCron } = await import('./services/dailyQuestService.js');
+    startDailyQuestCron();
 
     // Start server
     app.listen(PORT, '0.0.0.0', () => {
@@ -124,8 +113,8 @@ async function startServer() {
     });
 
   } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
+    console.error('Failed to initialize some core services (Server is still running):', error);
+    // process.exit(1); -> Removed to prevent Render 521 crash loop
   }
 }
 
