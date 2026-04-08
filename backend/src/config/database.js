@@ -18,17 +18,30 @@ class DBAdapter {
 
     if (this.type === 'postgres') {
       console.log('🔌 Connecting to PostgreSQL...');
+      // Handle Supabase IPv4 depreciation on port 5432 by forcing the pooler port 6543
+      let connString = process.env.DATABASE_URL;
+      if (connString && connString.includes('supabase.co') && connString.includes(':5432')) {
+        console.log('🔄 Automatically switching Supabase connection to IPv4 pooler port (6543)...');
+        // Supabase pooler requires pgbouncer pooling flags or just port change
+        connString = connString.replace(':5432', ':6543');
+        // If it lacks pgbouncer params, appending them ensures transaction mode works flawlessly
+        if (!connString.includes('pgbouncer=true')) {
+          connString += (connString.includes('?') ? '&' : '?') + 'pgbouncer=true';
+        }
+      }
+
       this.pool = new pg.Pool({
-        connectionString: process.env.DATABASE_URL,
+        connectionString: connString,
         ssl: {
           rejectUnauthorized: false
-        }
+        },
+        connectionTimeoutMillis: 10000
       });
 
       // Add error handler to pool to avoid crashing on idle connection errors
       this.pool.on('error', (err) => {
         console.error('Unexpected error on idle client', err);
-        process.exit(-1);
+        // DO NOT exit the process. Let it stay alive so the web server doesn't crash.
       });
     } else {
       console.log('🔌 Connecting to SQLite (Local)...');
