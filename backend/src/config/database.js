@@ -22,7 +22,8 @@ class DBAdapter {
         connectionString: process.env.DATABASE_URL,
         ssl: {
           rejectUnauthorized: false
-        }
+        },
+        connectionTimeoutMillis: 10000
       });
 
       // Add error handler to pool to avoid crashing on idle connection errors

@@ -90,9 +90,9 @@ async function startServer() {
     console.log('Initializing database...');
     await initializeDatabase();
 
-    // Initialize AI (optional)
-    console.log('Checking AI availability...');
-    await initializeAI();
+    // Initialize AI (optional) - do not block startup
+    console.log('Checking AI availability (in background)...');
+    initializeAI().catch(err => console.error('AI check error:', err));
 
     // Start Daily Quests Cron
     const { startDailyQuestCron } = await import('./services/dailyQuestService.js');
