@@ -99,7 +99,7 @@ async function startServer() {
     startDailyQuestCron();
 
     // Start server
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log('');
       console.log('═══════════════════════════════════════');
       console.log('   HUNTER SYSTEM - Backend Server     ');
