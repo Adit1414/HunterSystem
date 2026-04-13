@@ -18,17 +18,30 @@ class DBAdapter {
 
     if (this.type === 'postgres') {
       console.log('🔌 Connecting to PostgreSQL...');
+      // Handle Supabase IPv4 depreciation on port 5432 by forcing the pooler port 6543
+      let connString = process.env.DATABASE_URL;
+      if (connString && connString.includes('supabase.co') && connString.includes(':5432')) {
+        console.log('🔄 Automatically switching Supabase connection to IPv4 pooler port (6543)...');
+        // Supabase pooler requires pgbouncer pooling flags or just port change
+        connString = connString.replace(':5432', ':6543');
+        // If it lacks pgbouncer params, appending them ensures transaction mode works flawlessly
+        if (!connString.includes('pgbouncer=true')) {
+          connString += (connString.includes('?') ? '&' : '?') + 'pgbouncer=true';
+        }
+      }
+
       this.pool = new pg.Pool({
-        connectionString: process.env.DATABASE_URL,
+        connectionString: connString,
         ssl: {
           rejectUnauthorized: false
-        }
+        },
+        connectionTimeoutMillis: 10000
       });
 
       // Add error handler to pool to avoid crashing on idle connection errors
       this.pool.on('error', (err) => {
         console.error('Unexpected error on idle client', err);
-        process.exit(-1);
+        // DO NOT exit the process. Let it stay alive so the web server doesn't crash.
       });
     } else {
       console.log('🔌 Connecting to SQLite (Local)...');
@@ -259,6 +272,28 @@ export async function initializeDatabase() {
       );
     `);
 
+    if (db.type === 'postgres') {
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS quest_history (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER,
+          quest_id TEXT,
+          type TEXT,
+          completed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    } else {
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS quest_history (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER,
+          quest_id TEXT,
+          type TEXT,
+          completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    }
+
     // System Config / Tracking for daily resets
     await db.exec(`
       CREATE TABLE IF NOT EXISTS system_config (
@@ -364,6 +399,39 @@ export async function initializeDatabase() {
       console.error('Migration Error (Auth columns):', err.message);
     }
     // ----------------------------------
+
+    // --- MIGRATION FOR QUEST HISTORY ---
+    try {
+      console.log('Migrating: Seeding quest_history from existing completed quests... (One time)');
+      if (db.type === 'postgres') {
+        // Postgres schema changes if necessary (id SERIAL)
+        await db.exec(`
+          CREATE TABLE IF NOT EXISTS quest_history (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER,
+            quest_id TEXT,
+            type TEXT,
+            completed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+        await db.exec(`
+          INSERT INTO quest_history (user_id, quest_id, type, completed_at)
+          SELECT user_id, id, type, completed_at FROM quests 
+          WHERE status = 'completed' AND type = 'daily'
+          ON CONFLICT DO NOTHING
+        `);
+      } else {
+        await db.exec(`
+          INSERT INTO quest_history (user_id, quest_id, type, completed_at)
+          SELECT user_id, id, type, completed_at FROM quests 
+          WHERE status = 'completed' AND type = 'daily'
+          AND id NOT IN (SELECT quest_id FROM quest_history)
+        `);
+      }
+    } catch (err) {
+      console.error('Migration Error (Quest History):', err.message);
+    }
+    // -----------------------------------
 
     console.log('✓ Database initialized successfully');
   }

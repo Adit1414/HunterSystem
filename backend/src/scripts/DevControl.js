@@ -11,6 +11,7 @@ import { getXPForNextLevel, getRankName } from '../services/progressionEngine.js
 // 4. Restart your frontend/backend to see changes immediately.
 
 const TARGET_USER_ID = 1;
+// 1 is adi
 // 14 is arhan
 // 1 is aditya
 
@@ -22,11 +23,11 @@ const NEW_TOTAL_XP = null; // Example: 5000
 // --- OPTION 2: UPDATE ATTRIBUTES ---
 // Set specific attributes to new values. Set to null to leave unchanged.
 const NEW_ATTRIBUTES = {
-    strength: 24,      // Example: 50
-    creation: 49,
-    network: 33,
-    vitality: 26,
-    intelligence: 78,
+    strength: 25,      // Example: 50
+    creation: 55,
+    network: 34,
+    vitality: 29,
+    intelligence: 82,
     stat_points: null    // Unspent points
 };
 

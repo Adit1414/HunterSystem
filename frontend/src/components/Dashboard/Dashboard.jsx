@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import XPBar from './XPBar';
 import api from '../../services/api';
 import { formatNumber } from '../../utils/formatters';
+import ActivityCalendar from './ActivityCalendar';
 import './Dashboard.css';
 
 function Dashboard({ user, stats, onRefresh }) {
@@ -66,6 +67,12 @@ function Dashboard({ user, stats, onRefresh }) {
         <div className="rank-display">
           <div className="rank-title">Hunter Rank</div>
           <div className="rank-name">{user.rankName}</div>
+        </div>
+
+        <div className="streak-display">
+          <div className="streak-value" style={{ fontSize: '2rem', fontWeight: 'bold', color: '#f59e0b', marginLeft: 'auto' }}>
+            {stats?.streak || 0}🔥
+          </div>
         </div>
       </div>
 
@@ -155,6 +162,9 @@ function Dashboard({ user, stats, onRefresh }) {
           </div>
         </div>
       </div>
+
+      {/* Activity Calendar */}
+      <ActivityCalendar history={stats?.history} />
     </div>
   );
 }

@@ -90,16 +90,16 @@ async function startServer() {
     console.log('Initializing database...');
     await initializeDatabase();
 
-    // Initialize AI (optional)
-    console.log('Checking AI availability...');
-    await initializeAI();
+    // Initialize AI (optional) - do not block startup
+    console.log('Checking AI availability (in background)...');
+    initializeAI().catch(err => console.error('AI check error:', err));
 
     // Start Daily Quests Cron
     const { startDailyQuestCron } = await import('./services/dailyQuestService.js');
     startDailyQuestCron();
 
     // Start server
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log('');
       console.log('═══════════════════════════════════════');
       console.log('   HUNTER SYSTEM - Backend Server     ');
@@ -113,8 +113,8 @@ async function startServer() {
     });
 
   } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
+    console.error('Failed to initialize some core services (Server is still running):', error);
+    // process.exit(1); -> Removed to prevent Render 521 crash loop
   }
 }
 
