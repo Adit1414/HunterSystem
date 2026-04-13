@@ -22,10 +22,10 @@ const NEW_TOTAL_XP = null; // Example: 5000
 // --- OPTION 2: UPDATE ATTRIBUTES ---
 // Set specific attributes to new values. Set to null to leave unchanged.
 const NEW_ATTRIBUTES = {
-    strength: 25,      // Example: 50
-    creation: 55,
-    network: 34,
-    vitality: 29,
+    strength: 23,      // Example: 50
+    creation: 54,
+    network: 33,
+    vitality: 28,
     intelligence: 82,
     stat_points: null    // Unspent points
 };

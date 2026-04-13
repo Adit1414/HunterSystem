@@ -38,7 +38,7 @@ export async function checkAndResetDailyQuests() {
         console.log(`[DailyQuestService] Processing daily reset for ${today} (Last reset: ${lastReset})`);
 
         // Get all users
-        const users = await db.query('SELECT id FROM users');
+        const users = await db.query('SELECT id, consecutive_failed_dailies FROM users');
 
         await db.transaction(async (tx) => {
             // 1. If there's a previous day, evaluate penalty for each user
@@ -50,24 +50,43 @@ export async function checkAndResetDailyQuests() {
                         WHERE type = 'daily' AND status = 'completed' AND user_id = ?
                     `, [user.id]);
                     const completedCount = parseInt(completedCountRes.count) || 0;
+                    const consecutiveFailed = user.consecutive_failed_dailies || 0;
 
                     console.log(`[DailyQuestService] User ${user.id}: ${completedCount} completed daily quests since last reset.`);
 
                     if (completedCount < 3) {
-                        console.log(`[DailyQuestService] Penalty applied to user ${user.id}: -1 to all stats!`);
+                        if (consecutiveFailed < 5) {
+                            console.log(`[DailyQuestService] Penalty applied to user ${user.id}: -1 to all stats!`);
 
-                        await tx.run(`
-                            UPDATE users 
-                            SET 
-                              strength = CASE WHEN strength > 1 THEN strength - 1 ELSE 1 END,
-                              creation = CASE WHEN creation > 1 THEN creation - 1 ELSE 1 END,
-                              network = CASE WHEN network > 1 THEN network - 1 ELSE 1 END,
-                              vitality = CASE WHEN vitality > 1 THEN vitality - 1 ELSE 1 END,
-                              intelligence = CASE WHEN intelligence > 1 THEN intelligence - 1 ELSE 1 END
-                            WHERE id = ?
-                        `, [user.id]);
+                            await tx.run(`
+                                UPDATE users 
+                                SET 
+                                  strength = CASE WHEN strength > 10 THEN strength - 1 ELSE 10 END,
+                                  creation = CASE WHEN creation > 10 THEN creation - 1 ELSE 10 END,
+                                  network = CASE WHEN network > 10 THEN network - 1 ELSE 10 END,
+                                  vitality = CASE WHEN vitality > 10 THEN vitality - 1 ELSE 10 END,
+                                  intelligence = CASE WHEN intelligence > 10 THEN intelligence - 1 ELSE 10 END,
+                                  consecutive_failed_dailies = consecutive_failed_dailies + 1
+                                WHERE id = ?
+                            `, [user.id]);
+                        } else {
+                            console.log(`[DailyQuestService] User ${user.id}: Penalty paused (5+ consecutive failed days).`);
+                            // We cap it at 5 so it won't keep growing infinitely.
+                            await tx.run(`
+                                UPDATE users 
+                                SET consecutive_failed_dailies = 5 
+                                WHERE id = ?
+                            `, [user.id]);
+                        }
                     } else {
                         console.log(`[DailyQuestService] User ${user.id}: Penalty avoided!`);
+                        if (consecutiveFailed > 0) {
+                            await tx.run(`
+                                UPDATE users 
+                                SET consecutive_failed_dailies = 0 
+                                WHERE id = ?
+                            `, [user.id]);
+                        }
                     }
                 }
             }
