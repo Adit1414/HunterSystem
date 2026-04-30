@@ -56,7 +56,7 @@ export function getProgressPercentage(currentXP, level) {
 /**
  * Estimate XP rewards for quest difficulty
  */
-export function estimateQuestXP(difficulty, hasDeadline = false) {
+export function estimateQuestXP(difficulty, hasDeadline = false, userLevel = 1) {
   const baseXP = {
     'E': 50,
     'D': 100,
@@ -66,7 +66,26 @@ export function estimateQuestXP(difficulty, hasDeadline = false) {
     'S': 1600
   };
 
-  let xp = baseXP[difficulty] || 0;
+  // Calculate level-adjusted E-rank base XP first
+  let eRankXP = baseXP['E'];
+  const startLevel = 20;
+  const maxBoostLevel = 100;
+  const levelInterval = 10;
+  const multiplierBoost = 1.2;
+
+  if (userLevel >= startLevel) {
+    const cappedLevel = Math.min(userLevel, maxBoostLevel);
+    const milestones = Math.floor(cappedLevel / levelInterval) - 1;
+    
+    // Apply boost per milestone and floor to nearest 10
+    for (let i = 0; i < milestones; i++) {
+      eRankXP = eRankXP * multiplierBoost;
+      eRankXP = Math.floor(eRankXP / 10) * 10;
+    }
+  }
+
+  const rankMultiplier = (baseXP[difficulty] || 0) / baseXP['E'];
+  let xp = eRankXP * rankMultiplier;
   
   // Bonus if deadline exists (potential +20%)
   if (hasDeadline) {
@@ -81,7 +100,7 @@ export function estimateQuestXP(difficulty, hasDeadline = false) {
  */
 export function questsNeededToLevelUp(currentXP, currentLevel, questDifficulty) {
   const xpNeeded = getXPForLevel(currentLevel) - currentXP;
-  const xpPerQuest = estimateQuestXP(questDifficulty);
+  const xpPerQuest = estimateQuestXP(questDifficulty, false, currentLevel);
   
   return Math.ceil(xpNeeded / xpPerQuest);
 }

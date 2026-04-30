@@ -54,7 +54,26 @@ export function getXPForNextLevel(currentLevel) {
  * @returns {number} Final XP amount
  */
 export function calculateQuestXP(quest, userLevel = 1, context = {}) {
-  const baseXP = BASE_XP[quest.difficulty];
+  // Calculate level-adjusted E-rank base XP first
+  let eRankXP = BASE_XP['E'];
+  const boostConfig = GAME_CONSTANTS.PROGRESSION.MILESTONE_XP_BOOST;
+  
+  // Progressive XP Scaling: 20% boost every 10 levels starting at 20, capped at level 100
+  if (userLevel >= boostConfig.START_LEVEL) {
+    const cappedLevel = Math.min(userLevel, boostConfig.MAX_BOOST_LEVEL);
+    const milestones = Math.floor(cappedLevel / boostConfig.LEVEL_INTERVAL) - 1;
+    
+    // Apply boost per milestone and floor to nearest 10
+    for (let i = 0; i < milestones; i++) {
+      eRankXP = eRankXP * boostConfig.MULTIPLIER;
+      eRankXP = Math.floor(eRankXP / 10) * 10;
+    }
+  }
+
+  // Derive this quest's base XP based on rank multipliers (D=2, C=4, B=8, A=16, S=32)
+  const rankMultiplier = BASE_XP[quest.difficulty] / BASE_XP['E'];
+  const baseXP = eRankXP * rankMultiplier;
+
   let multiplier = 1.0;
 
   // Bonus for completing before due date
@@ -67,14 +86,6 @@ export function calculateQuestXP(quest, userLevel = 1, context = {}) {
   if (quest.difficulty === 'E' && context.recentEasyQuests > threshold) {
     const penalty = Math.min(GAME_CONSTANTS.PROGRESSION.ANTI_GRIND.PENALTY_MULTIPLIER, (context.recentEasyQuests - threshold) * 0.05);
     multiplier *= (1 - penalty);
-  }
-
-  // Progressive XP Scaling: 20% boost every 10 levels starting at 20, capped at level 100
-  const boostConfig = GAME_CONSTANTS.PROGRESSION.MILESTONE_XP_BOOST;
-  if (userLevel >= boostConfig.START_LEVEL) {
-    const cappedLevel = Math.min(userLevel, boostConfig.MAX_BOOST_LEVEL);
-    const milestones = Math.floor(cappedLevel / boostConfig.LEVEL_INTERVAL) - 1;
-    multiplier *= Math.pow(boostConfig.MULTIPLIER, milestones);
   }
 
   return Math.floor(baseXP * multiplier);

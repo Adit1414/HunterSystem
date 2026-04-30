@@ -155,7 +155,7 @@ function Dashboard({ user, stats, onRefresh }) {
             <div className="stat-icon">⭐</div>
             <div className="stat-content">
               <div className="stat-value">
-                {((stats?.items?.legendary || 0) + (stats?.items?.mythic || 0))/10}
+                {((stats?.items?.legendary || 0) + (stats?.items?.mythic || 0)*2)}
               </div>
               <div className="stat-label">Legendary Items</div>
             </div>
