@@ -400,6 +400,22 @@ export async function initializeDatabase() {
     }
     // ----------------------------------
 
+    // --- MIGRATION FOR CONSECUTIVE FAILED DAILIES ---
+    try {
+      if (db.type === 'postgres') {
+        await db.exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS consecutive_failed_dailies INTEGER DEFAULT 0`);
+      } else {
+        const columns = await db.query("PRAGMA table_info(users)");
+        if (!columns.some(col => col.name === 'consecutive_failed_dailies')) {
+          console.log('Migrating: Adding consecutive_failed_dailies...');
+          await db.exec("ALTER TABLE users ADD COLUMN consecutive_failed_dailies INTEGER DEFAULT 0");
+        }
+      }
+    } catch (err) {
+      console.error('Migration Error (Consecutive Failed Dailies):', err.message);
+    }
+    // -----------------------------------
+
     // --- MIGRATION FOR QUEST HISTORY ---
     try {
       console.log('Migrating: Seeding quest_history from existing completed quests... (One time)');
@@ -430,6 +446,24 @@ export async function initializeDatabase() {
       }
     } catch (err) {
       console.error('Migration Error (Quest History):', err.message);
+    }
+    // -----------------------------------
+
+    // --- MIGRATION FOR ATTRIBUTE MINIMUM FIX ---
+    try {
+      console.log('Migrating: Ensuring all user attributes meet the minimum of 10...');
+      await db.exec(`
+        UPDATE users 
+        SET 
+          strength = CASE WHEN strength < 10 THEN 10 ELSE strength END,
+          creation = CASE WHEN creation < 10 THEN 10 ELSE creation END,
+          network = CASE WHEN network < 10 THEN 10 ELSE network END,
+          vitality = CASE WHEN vitality < 10 THEN 10 ELSE vitality END,
+          intelligence = CASE WHEN intelligence < 10 THEN 10 ELSE intelligence END
+        WHERE strength < 10 OR creation < 10 OR network < 10 OR vitality < 10 OR intelligence < 10;
+      `);
+    } catch (err) {
+      console.error('Migration Error (Attribute Minimum Fix):', err.message);
     }
     // -----------------------------------
 
