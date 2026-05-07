@@ -56,6 +56,7 @@ export function getXPForNextLevel(currentLevel) {
 export function calculateQuestXP(quest, userLevel = 1, context = {}) {
   // Calculate level-adjusted E-rank base XP first
   let eRankXP = BASE_XP['E'];
+
   const boostConfig = GAME_CONSTANTS.PROGRESSION.MILESTONE_XP_BOOST;
   
   // Progressive XP Scaling: 20% boost every 10 levels starting at 20, capped at level 100
@@ -68,6 +69,13 @@ export function calculateQuestXP(quest, userLevel = 1, context = {}) {
       eRankXP = eRankXP * boostConfig.MULTIPLIER;
       eRankXP = Math.floor(eRankXP / 10) * 10;
     }
+  }
+
+  // If user has disabled daily penalty, reduce E-rank base XP (after milestone boosts)
+  if (context.dailyPenaltyDisabled) {
+    eRankXP -= GAME_CONSTANTS.PROGRESSION.DAILY_PENALTY_DISABLED_XP_REDUCTION;
+    // Ensure XP doesn't go below 0 (or some minimum like 10)
+    eRankXP = Math.max(10, eRankXP);
   }
 
   // Derive this quest's base XP based on rank multipliers (D=2, C=4, B=8, A=16, S=32)

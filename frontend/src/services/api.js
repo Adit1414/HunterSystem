@@ -66,6 +66,11 @@ export const getAchievements = async () => {
   return response.data;
 };
 
+export const toggleDailyPenalty = async () => {
+  const response = await api.post('/user/daily-penalty/toggle');
+  return response.data;
+};
+
 // ===== Quest API =====
 
 export const getQuests = async (params = {}) => {

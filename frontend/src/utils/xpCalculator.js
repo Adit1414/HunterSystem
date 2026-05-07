@@ -56,7 +56,7 @@ export function getProgressPercentage(currentXP, level) {
 /**
  * Estimate XP rewards for quest difficulty
  */
-export function estimateQuestXP(difficulty, hasDeadline = false, userLevel = 1) {
+export function estimateQuestXP(difficulty, hasDeadline = false, userLevel = 1, dailyPenaltyDisabled = false) {
   const baseXP = {
     'E': 50,
     'D': 100,
@@ -68,6 +68,7 @@ export function estimateQuestXP(difficulty, hasDeadline = false, userLevel = 1) 
 
   // Calculate level-adjusted E-rank base XP first
   let eRankXP = baseXP['E'];
+
   const startLevel = 20;
   const maxBoostLevel = 100;
   const levelInterval = 10;
@@ -82,6 +83,13 @@ export function estimateQuestXP(difficulty, hasDeadline = false, userLevel = 1) 
       eRankXP = eRankXP * multiplierBoost;
       eRankXP = Math.floor(eRankXP / 10) * 10;
     }
+  }
+
+  // If user has disabled daily penalty, reduce E-rank base XP (after milestone boosts)
+  if (dailyPenaltyDisabled) {
+    eRankXP -= 10;
+    // Ensure XP doesn't go below 0 (or some minimum like 10)
+    eRankXP = Math.max(10, eRankXP);
   }
 
   const rankMultiplier = (baseXP[difficulty] || 0) / baseXP['E'];

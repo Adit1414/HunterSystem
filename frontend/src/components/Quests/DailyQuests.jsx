@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { getDailyQuests, completeQuest, updateDailyQuest } from '../../services/api';
+import { getDailyQuests, completeQuest, updateDailyQuest, toggleDailyPenalty } from '../../services/api';
 import QuestCard from './QuestCard';
 import EditDailyQuestModal from '../Modals/EditDailyQuestModal';
 import './DailyQuests.css';
 
-function DailyQuests({ onQuestComplete }) {
+function DailyQuests({ onQuestComplete, user, onUserRefresh }) {
     const [quests, setQuests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [timeLeft, setTimeLeft] = useState('');
     const [editingQuest, setEditingQuest] = useState(null);
+    const [toggling, setToggling] = useState(false);
+
+    const penaltyDisabled = user?.dailyPenaltyDisabled || false;
 
     const fetchDailyData = async () => {
         try {
@@ -77,6 +80,21 @@ function DailyQuests({ onQuestComplete }) {
         }
     };
 
+    const handleTogglePenalty = async () => {
+        if (toggling) return;
+        setToggling(true);
+        try {
+            await toggleDailyPenalty();
+            if (onUserRefresh) onUserRefresh();
+            fetchDailyData(); // Refresh quest XP values
+        } catch (error) {
+            console.error('Failed to toggle daily penalty:', error);
+            alert('Failed to toggle penalty setting.');
+        } finally {
+            setToggling(false);
+        }
+    };
+
     const completedCount = quests.filter(q => q.status === 'completed').length;
     const isSafe = completedCount >= 3;
 
@@ -90,21 +108,50 @@ function DailyQuests({ onQuestComplete }) {
                 <h2>Daily Routine</h2>
                 <p className="reset-timer">Resets in: <span>{timeLeft}</span></p>
 
-                <div className={`status-banner ${isSafe ? 'safe' : 'danger'}`}>
+                <div className={`status-banner ${penaltyDisabled ? 'penalty-off' : (isSafe ? 'safe' : 'danger')}`}>
                     <div className="status-info">
                         <span className="completion-count">{completedCount} / 5 Completed</span>
                         <p>
-                            {isSafe
-                                ? "Penalty avoided! Good job fulfilling your daily duties."
-                                : "Warning: Complete at least 3 quests before midnight to avoid a penalty (-1 all stats)."}
+                            {penaltyDisabled
+                                ? "Penalty disabled — no stat loss, but XP rewards are reduced."
+                                : isSafe
+                                    ? "Penalty avoided! Good job fulfilling your daily duties."
+                                    : "Warning: Complete at least 3 quests before midnight to avoid a penalty (-1 all stats)."}
                         </p>
                     </div>
                     <div className="progress-bar-container">
                         <div
                             className="progress-bar-fill"
-                            style={{ width: `${(completedCount / 5) * 100}%`, backgroundColor: isSafe ? 'var(--quest-completed)' : 'var(--danger-color)' }}
+                            style={{ width: `${(completedCount / 5) * 100}%`, backgroundColor: penaltyDisabled ? 'var(--text-secondary)' : (isSafe ? 'var(--quest-completed)' : 'var(--danger-color)') }}
                         ></div>
                     </div>
+                </div>
+
+                {/* Penalty Toggle */}
+                <div className="penalty-toggle-section">
+                    <div className="penalty-toggle-info">
+                        <span className="penalty-toggle-label">
+                            {penaltyDisabled ? '🛡️ Penalty Protection' : '⚔️ Daily Challenge'}
+                        </span>
+                        <span className="penalty-toggle-desc">
+                            {penaltyDisabled
+                                ? 'No stat loss for incomplete dailies, but -10 base XP on all quests'
+                                : 'Full XP rewards, but risk losing stats if you miss 3 daily quests'}
+                        </span>
+                    </div>
+                    <button
+                        className={`penalty-toggle-btn ${penaltyDisabled ? 'active' : ''}`}
+                        onClick={handleTogglePenalty}
+                        disabled={toggling}
+                        title={penaltyDisabled ? 'Re-enable daily penalty for full XP' : 'Disable daily penalty (reduces XP)'}
+                    >
+                        <span className="toggle-track">
+                            <span className="toggle-thumb"></span>
+                        </span>
+                        <span className="toggle-text">
+                            {toggling ? '...' : (penaltyDisabled ? 'ON' : 'OFF')}
+                        </span>
+                    </button>
                 </div>
             </div>
 
@@ -141,4 +188,3 @@ function DailyQuests({ onQuestComplete }) {
 }
 
 export default DailyQuests;
-

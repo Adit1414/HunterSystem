@@ -416,6 +416,22 @@ export async function initializeDatabase() {
     }
     // -----------------------------------
 
+    // --- MIGRATION FOR DAILY PENALTY DISABLED ---
+    try {
+      if (db.type === 'postgres') {
+        await db.exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_penalty_disabled INTEGER DEFAULT 0`);
+      } else {
+        const columns = await db.query("PRAGMA table_info(users)");
+        if (!columns.some(col => col.name === 'daily_penalty_disabled')) {
+          console.log('Migrating: Adding daily_penalty_disabled...');
+          await db.exec("ALTER TABLE users ADD COLUMN daily_penalty_disabled INTEGER DEFAULT 0");
+        }
+      }
+    } catch (err) {
+      console.error('Migration Error (Daily Penalty Disabled):', err.message);
+    }
+    // -----------------------------------
+
     // --- MIGRATION FOR QUEST HISTORY ---
     try {
       console.log('Migrating: Seeding quest_history from existing completed quests... (One time)');

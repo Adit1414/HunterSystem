@@ -22,6 +22,7 @@ export const getUserProgress = async (req, res) => {
                 xpForNextLevel,
                 progressPercentage,
                 rankName,
+                dailyPenaltyDisabled: !!user.daily_penalty_disabled,
                 createdAt: user.created_at,
                 stats: {
                     strength: user.strength || 10,
@@ -120,5 +121,29 @@ export const getAchievements = async (req, res) => {
     } catch (error) {
         console.error('Error fetching achievements:', error);
         res.status(500).json({ error: 'Failed to fetch achievements' });
+    }
+};
+
+export const toggleDailyPenalty = async (req, res) => {
+    try {
+        const userId = req.dbUserId;
+        const user = await User.getById(userId);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const newValue = user.daily_penalty_disabled ? 0 : 1;
+
+        await db.run(`
+            UPDATE users 
+            SET daily_penalty_disabled = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `, [newValue, userId]);
+
+        res.json({
+            message: newValue ? 'Daily penalty disabled. XP rewards reduced.' : 'Daily penalty re-enabled. XP rewards restored.',
+            dailyPenaltyDisabled: !!newValue
+        });
+    } catch (error) {
+        console.error('Error toggling daily penalty:', error);
+        res.status(500).json({ error: 'Failed to toggle daily penalty' });
     }
 };

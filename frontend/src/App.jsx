@@ -157,6 +157,8 @@ function AppContent() {
           {activeView === 'daily' && (
             <DailyQuests
               onQuestComplete={handleQuestComplete}
+              user={user}
+              onUserRefresh={refreshUser}
             />
           )}
 

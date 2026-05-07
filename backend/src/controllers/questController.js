@@ -17,9 +17,10 @@ export const getAllQuests = async (req, res) => {
         const quests = await Quest.getAll({ status, difficulty, type, user_id: userId });
 
         // Add calculated XP to each quest
+        const dailyPenaltyDisabled = !!(user?.daily_penalty_disabled);
         const enhancedQuests = quests.map(quest => ({
             ...quest,
-            calculated_xp: calculateQuestXP(quest, userLevel, { completedOnTime: false, recentEasyQuests: 0 })
+            calculated_xp: calculateQuestXP(quest, userLevel, { completedOnTime: false, recentEasyQuests: 0, dailyPenaltyDisabled })
         }));
 
         res.json({ quests: enhancedQuests });
@@ -38,9 +39,10 @@ export const getDailyQuests = async (req, res) => {
         const quests = await Quest.getAll({ type: 'daily', user_id: userId });
 
         // Add calculated XP to each quest
+        const dailyPenaltyDisabled = !!(user?.daily_penalty_disabled);
         const enhancedQuests = quests.map(quest => ({
             ...quest,
-            calculated_xp: calculateQuestXP(quest, userLevel, { completedOnTime: false, recentEasyQuests: 0 })
+            calculated_xp: calculateQuestXP(quest, userLevel, { completedOnTime: false, recentEasyQuests: 0, dailyPenaltyDisabled })
         }));
 
         const now = new Date();
@@ -82,9 +84,10 @@ export const getQuestById = async (req, res) => {
         const quest = await Quest.getById(req.params.id, userId);
         if (!quest) return res.status(404).json({ error: 'Quest not found' });
 
+        const dailyPenaltyDisabled = !!(user?.daily_penalty_disabled);
         const enhancedQuest = {
             ...quest,
-            calculated_xp: calculateQuestXP(quest, userLevel, { completedOnTime: false, recentEasyQuests: 0 })
+            calculated_xp: calculateQuestXP(quest, userLevel, { completedOnTime: false, recentEasyQuests: 0, dailyPenaltyDisabled })
         };
 
         res.json({ quest: enhancedQuest });
@@ -125,9 +128,10 @@ export const createQuest = async (req, res) => {
         const userLevel = user ? user.level : 1;
 
         const quest = await Quest.getById(questId, userId);
+        const dailyPenaltyDisabled = !!(user?.daily_penalty_disabled);
         const enhancedQuest = {
             ...quest,
-            calculated_xp: calculateQuestXP(quest, userLevel, { completedOnTime: false, recentEasyQuests: 0 })
+            calculated_xp: calculateQuestXP(quest, userLevel, { completedOnTime: false, recentEasyQuests: 0, dailyPenaltyDisabled })
         };
 
         res.status(201).json({ quest: enhancedQuest });
@@ -165,9 +169,10 @@ export const updateQuest = async (req, res) => {
         const userLevel = user ? user.level : 1;
 
         const updatedQuest = await Quest.getById(req.params.id, userId);
+        const dailyPenaltyDisabled = !!(user?.daily_penalty_disabled);
         const enhancedQuest = {
             ...updatedQuest,
-            calculated_xp: calculateQuestXP(updatedQuest, userLevel, { completedOnTime: false, recentEasyQuests: 0 })
+            calculated_xp: calculateQuestXP(updatedQuest, userLevel, { completedOnTime: false, recentEasyQuests: 0, dailyPenaltyDisabled })
         };
         res.json({ quest: enhancedQuest });
     } catch (error) {
@@ -197,9 +202,10 @@ export const updateDailyQuest = async (req, res) => {
         const userLevel = user ? user.level : 1;
 
         const updatedQuest = await Quest.getById(req.params.id, userId);
+        const dailyPenaltyDisabled = !!(user?.daily_penalty_disabled);
         const enhancedQuest = {
             ...updatedQuest,
-            calculated_xp: calculateQuestXP(updatedQuest, userLevel, { completedOnTime: false, recentEasyQuests: 0 })
+            calculated_xp: calculateQuestXP(updatedQuest, userLevel, { completedOnTime: false, recentEasyQuests: 0, dailyPenaltyDisabled })
         };
         res.json({ quest: enhancedQuest });
     } catch (error) {
@@ -233,7 +239,8 @@ export const completeQuest = async (req, res) => {
         const recentEasyQuests = await Quest.getRecentEasyQuests(userId);
         const recentCount = recentEasyQuests ? recentEasyQuests.count : 0;
 
-        const xpGained = calculateQuestXP(quest, user.level, { completedOnTime, recentEasyQuests: recentCount });
+        const dailyPenaltyDisabled = !!(user?.daily_penalty_disabled);
+        const xpGained = calculateQuestXP(quest, user.level, { completedOnTime, recentEasyQuests: recentCount, dailyPenaltyDisabled });
         const xpResult = await User.addXp(user.id, xpGained, quest.attribute || 'strength');
 
         const specialRewards = [];

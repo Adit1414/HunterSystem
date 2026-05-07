@@ -38,7 +38,7 @@ export async function checkAndResetDailyQuests() {
         console.log(`[DailyQuestService] Processing daily reset for ${today} (Last reset: ${lastReset})`);
 
         // Get all users
-        const users = await db.query('SELECT id, consecutive_failed_dailies FROM users');
+        const users = await db.query('SELECT id, consecutive_failed_dailies, daily_penalty_disabled FROM users');
 
         await db.transaction(async (tx) => {
             // 1. If there's a previous day, evaluate penalty for each user
@@ -55,7 +55,17 @@ export async function checkAndResetDailyQuests() {
                     console.log(`[DailyQuestService] User ${user.id}: ${completedCount} completed daily quests since last reset.`);
 
                     if (completedCount < 3) {
-                        if (consecutiveFailed < 5) {
+                        // Skip penalty if user has opted out
+                        if (user.daily_penalty_disabled) {
+                            console.log(`[DailyQuestService] User ${user.id}: Penalty skipped (daily penalty disabled).`);
+                            if (consecutiveFailed > 0) {
+                                await tx.run(`
+                                    UPDATE users 
+                                    SET consecutive_failed_dailies = 0 
+                                    WHERE id = ?
+                                `, [user.id]);
+                            }
+                        } else if (consecutiveFailed < 5) {
                             console.log(`[DailyQuestService] Penalty applied to user ${user.id}: -1 to all stats!`);
 
                             await tx.run(`

@@ -65,7 +65,10 @@ export const GAME_CONSTANTS = {
       START_LEVEL: 20,
       MAX_BOOST_LEVEL: 100,
       MULTIPLIER: 1.2
-    }
+    },
+
+    // XP reduction from E-rank base when daily penalty is disabled by the user
+    DAILY_PENALTY_DISABLED_XP_REDUCTION: 10
   },
 
   // Default starting stats for a new user
