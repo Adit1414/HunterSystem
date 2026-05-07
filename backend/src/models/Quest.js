@@ -57,12 +57,12 @@ export class Quest {
    * Create new quest
    */
   static async create(questData) {
-    const { id, user_id, title, description, difficulty, xp_reward, due_date, attribute } = questData;
+    const { id, user_id, title, description, difficulty, xp_reward, due_date, attribute, recurrence_interval_days } = questData;
 
     return await db.run(`
-      INSERT INTO quests (id, user_id, title, description, difficulty, xp_reward, due_date, status, attribute)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?)
-    `, [id, user_id, title, description, difficulty, xp_reward, due_date || null, attribute || 'strength']);
+      INSERT INTO quests (id, user_id, title, description, difficulty, xp_reward, due_date, status, attribute, recurrence_interval_days)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
+    `, [id, user_id, title, description, difficulty, xp_reward, due_date || null, attribute || 'strength', recurrence_interval_days || null]);
   }
 
   /**

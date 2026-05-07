@@ -100,7 +100,7 @@ export const getQuestById = async (req, res) => {
 export const createQuest = async (req, res) => {
     try {
         const userId = req.dbUserId;
-        const { title, description, difficulty, dueDate, attribute } = req.body;
+        const { title, description, difficulty, dueDate, attribute, recurrenceIntervalDays } = req.body;
         if (!title || !difficulty) return res.status(400).json({ error: 'Title and difficulty are required' });
 
         const validDifficulties = Object.keys(GAME_CONSTANTS.XP_REWARDS);
@@ -112,6 +112,13 @@ export const createQuest = async (req, res) => {
             finalDescription = await generateQuestFlavor(title, difficulty);
         }
 
+        let finalDueDate = dueDate;
+        if (!finalDueDate && recurrenceIntervalDays) {
+            const date = new Date();
+            date.setDate(date.getDate() + parseInt(recurrenceIntervalDays, 10));
+            finalDueDate = date.toISOString();
+        }
+
         const questId = randomUUID();
         await Quest.create({
             id: questId,
@@ -120,8 +127,9 @@ export const createQuest = async (req, res) => {
             description: finalDescription,
             difficulty,
             xp_reward: xpReward,
-            due_date: dueDate,
-            attribute: attribute || 'strength'
+            due_date: finalDueDate,
+            attribute: attribute || 'strength',
+            recurrence_interval_days: recurrenceIntervalDays ? parseInt(recurrenceIntervalDays, 10) : null
         });
 
         const user = await User.getById(userId);
@@ -144,7 +152,7 @@ export const createQuest = async (req, res) => {
 export const updateQuest = async (req, res) => {
     try {
         const userId = req.dbUserId;
-        const { title, description, difficulty, dueDate, status } = req.body;
+        const { title, description, difficulty, dueDate, status, recurrenceIntervalDays } = req.body;
         const quest = await Quest.getById(req.params.id, userId);
         if (!quest) return res.status(404).json({ error: 'Quest not found' });
         if (quest.status !== 'active') return res.status(400).json({ error: 'Cannot edit completed or failed quests' });
@@ -153,6 +161,7 @@ export const updateQuest = async (req, res) => {
         if (title !== undefined) updates.title = title;
         if (description !== undefined) updates.description = description;
         if (dueDate !== undefined) updates.due_date = dueDate;
+        if (recurrenceIntervalDays !== undefined) updates.recurrence_interval_days = recurrenceIntervalDays === null ? null : parseInt(recurrenceIntervalDays, 10);
 
         if (difficulty !== undefined) {
             const validDifficulties = Object.keys(GAME_CONSTANTS.XP_REWARDS);
@@ -184,7 +193,7 @@ export const updateQuest = async (req, res) => {
 export const updateDailyQuest = async (req, res) => {
     try {
         const userId = req.dbUserId;
-        const { title, description } = req.body;
+        const { title, description, difficulty } = req.body;
         const quest = await Quest.getById(req.params.id, userId);
         if (!quest) return res.status(404).json({ error: 'Quest not found' });
         if (quest.type !== 'daily') return res.status(400).json({ error: 'This endpoint is only for daily quests' });
@@ -193,8 +202,15 @@ export const updateDailyQuest = async (req, res) => {
         const updates = {};
         if (title !== undefined && title.trim() !== '') updates.title = title.trim();
         if (description !== undefined && description.trim() !== '') updates.description = description.trim();
+        
+        if (difficulty !== undefined) {
+            const validDifficulties = Object.keys(GAME_CONSTANTS.XP_REWARDS);
+            if (!validDifficulties.includes(difficulty)) return res.status(400).json({ error: 'Invalid difficulty level' });
+            updates.difficulty = difficulty;
+            updates.xp_reward = GAME_CONSTANTS.XP_REWARDS[difficulty];
+        }
 
-        if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'Provide a title or description to update' });
+        if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'No fields to update' });
 
         await Quest.update(req.params.id, updates);
 

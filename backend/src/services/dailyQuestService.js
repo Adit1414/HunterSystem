@@ -124,6 +124,34 @@ export async function checkAndResetDailyQuests() {
                 }
             }
 
+            // 3. Process recurring normal quests
+            console.log(`[DailyQuestService] Processing recurring normal quests...`);
+            const nowIso = new Date().toISOString();
+            const recurringQuests = await tx.query(`
+                SELECT id, due_date, recurrence_interval_days 
+                FROM quests 
+                WHERE type = 'normal' 
+                AND recurrence_interval_days IS NOT NULL 
+                AND due_date <= ?
+            `, [nowIso]);
+
+            for (const rq of recurringQuests) {
+                if (!rq.due_date) continue;
+                // Calculate next due date by adding interval until it's in the future
+                let nextDate = new Date(rq.due_date);
+                const now = new Date();
+                while (nextDate <= now) {
+                    nextDate.setDate(nextDate.getDate() + rq.recurrence_interval_days);
+                }
+                const newDateStr = nextDate.toISOString();
+
+                await tx.run(`
+                    UPDATE quests 
+                    SET status = 'active', completed_at = NULL, due_date = ?
+                    WHERE id = ?
+                `, [newDateStr, rq.id]);
+            }
+
             // 4. Update the tracker
             await tx.run(`
                 INSERT INTO system_config (key, value) 

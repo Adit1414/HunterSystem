@@ -9,6 +9,7 @@ function EditDailyQuestModal({ quest, onSave, onCancel }) {
     const [screen, setScreen] = useState('guidance'); // 'guidance' | 'edit'
     const [title, setTitle] = useState(quest?.title || '');
     const [description, setDescription] = useState(quest?.description || '');
+    const [difficulty, setDifficulty] = useState(quest?.difficulty || 'E');
     const [saving, setSaving] = useState(false);
 
     if (!quest) return null;
@@ -28,7 +29,7 @@ function EditDailyQuestModal({ quest, onSave, onCancel }) {
         if (!title.trim()) return;
         setSaving(true);
         try {
-            await onSave(quest.id, { title: title.trim(), description: description.trim() });
+            await onSave(quest.id, { title: title.trim(), description: description.trim(), difficulty });
         } finally {
             setSaving(false);
         }
@@ -94,6 +95,22 @@ function EditDailyQuestModal({ quest, onSave, onCancel }) {
                                     maxLength={300}
                                     rows={3}
                                 />
+                            </div>
+                            <div className="edit-form-group">
+                                <label htmlFor="edit-quest-difficulty">Rank</label>
+                                <select
+                                    id="edit-quest-difficulty"
+                                    className="edit-input"
+                                    value={difficulty}
+                                    onChange={(e) => setDifficulty(e.target.value)}
+                                >
+                                    <option value="E">E-Rank (Easy)</option>
+                                    <option value="D">D-Rank (Normal)</option>
+                                    <option value="C">C-Rank (Moderate)</option>
+                                    <option value="B">B-Rank (Hard)</option>
+                                    <option value="A">A-Rank (Very Hard)</option>
+                                    <option value="S">S-Rank (Extreme)</option>
+                                </select>
                             </div>
                         </div>
                         <div className="modal-actions" style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>

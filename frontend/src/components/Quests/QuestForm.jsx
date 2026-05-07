@@ -7,7 +7,8 @@ function QuestForm({ onQuestCreated, onCancel }) {
         description: '',
         difficulty: 'E',
         dueDate: '',
-        attribute: 'strength'
+        attribute: 'strength',
+        recurrenceIntervalDays: ''
     });
     const [loading, setLoading] = useState(false);
 
@@ -17,7 +18,7 @@ function QuestForm({ onQuestCreated, onCancel }) {
         try {
             await createQuest(formData);
             onQuestCreated();
-            setFormData({ title: '', description: '', difficulty: 'E', dueDate: '', attribute: 'strength' });
+            setFormData({ title: '', description: '', difficulty: 'E', dueDate: '', attribute: 'strength', recurrenceIntervalDays: '' });
         } catch (error) {
             console.error('Failed to create quest:', error);
         } finally {
@@ -81,13 +82,25 @@ function QuestForm({ onQuestCreated, onCancel }) {
                     </div>
 
                     <div className="form-group">
-                        <label>Due Date (Optional)</label>
+                        <label>Due Date</label>
                         <input
                             type="date"
                             value={formData.dueDate}
                             onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                         />
                     </div>
+                </div>
+
+                <div className="form-group">
+                    <label>Recurrence Interval (Days)</label>
+                    <input
+                        type="number"
+                        min="1"
+                        max="365"
+                        value={formData.recurrenceIntervalDays}
+                        onChange={(e) => setFormData({ ...formData, recurrenceIntervalDays: e.target.value })}
+                        placeholder="e.g. 2 for every 2 days (Optional)"
+                    />
                 </div>
 
                 <div className="form-actions">

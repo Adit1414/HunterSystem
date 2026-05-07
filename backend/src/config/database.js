@@ -432,6 +432,22 @@ export async function initializeDatabase() {
     }
     // -----------------------------------
 
+    // --- MIGRATION FOR RECURRING QUESTS ---
+    try {
+      if (db.type === 'postgres') {
+        await db.exec(`ALTER TABLE quests ADD COLUMN IF NOT EXISTS recurrence_interval_days INTEGER DEFAULT NULL`);
+      } else {
+        const columns = await db.query("PRAGMA table_info(quests)");
+        if (!columns.some(col => col.name === 'recurrence_interval_days')) {
+          console.log('Migrating: Adding recurrence_interval_days to quests...');
+          await db.exec("ALTER TABLE quests ADD COLUMN recurrence_interval_days INTEGER DEFAULT NULL");
+        }
+      }
+    } catch (err) {
+      console.error('Migration Error (Recurring Quests):', err.message);
+    }
+    // -----------------------------------
+
     // --- MIGRATION FOR QUEST HISTORY ---
     try {
       console.log('Migrating: Seeding quest_history from existing completed quests... (One time)');
