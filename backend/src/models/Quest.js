@@ -116,6 +116,17 @@ export class Quest {
   }
 
   /**
+   * Restore a completed/failed quest back to active status
+   */
+  static async restore(id) {
+    return await db.run(`
+      UPDATE quests
+      SET status = 'active', completed_at = NULL, xp_awarded = NULL
+      WHERE id = ?
+    `, [id]);
+  }
+
+  /**
    * Get recent E-rank quests (for anti-grind, scoped by user)
    */
   static async getRecentEasyQuests(userId = null) {

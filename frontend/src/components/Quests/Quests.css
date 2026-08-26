@@ -146,3 +146,18 @@
     border-radius: 8px;
     color: var(--text-tertiary);
 }
+
+/* Archive card restore button spin animation */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.archive-quest-card {
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+}
+
+.archive-quest-card:hover {
+    transform: translateY(-3px);
+    opacity: 1 !important;
+}

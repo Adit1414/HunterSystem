@@ -3,7 +3,7 @@ import QuestCard from './QuestCard';
 import QuestFilters from './QuestFilters';
 import QuestForm from './QuestForm';
 import FailQuestModal from '../Modals/FailQuestModal';
-import { completeQuest, failQuest, getArchivedQuests } from '../../services/api';
+import { completeQuest, failQuest, getArchivedQuests, restoreQuest } from '../../services/api';
 import './Quests.css';
 
 function QuestBoard({ quests, onQuestComplete, onQuestsChange }) {
@@ -14,6 +14,7 @@ function QuestBoard({ quests, onQuestComplete, onQuestsChange }) {
     // Archive state
     const [archivedQuests, setArchivedQuests] = useState([]);
     const [showArchive, setShowArchive] = useState(false);
+    const [restoringQuestId, setRestoringQuestId] = useState(null);
 
     useEffect(() => {
         loadArchivedQuests();
@@ -71,6 +72,24 @@ function QuestBoard({ quests, onQuestComplete, onQuestsChange }) {
         onQuestsChange(); // Refresh list
     };
 
+    const handleRestore = async (questId) => {
+        if (restoringQuestId) return; // prevent double-click
+        setRestoringQuestId(questId);
+        try {
+            const result = await restoreQuest(questId);
+            // Refresh the active quests list and user data
+            onQuestsChange();
+            // Also trigger a user refresh (same pattern as handleFailConfirm)
+            onQuestComplete({ levelUp: null, rewards: { items: [], special: [] }, user: result.user });
+            // Reload archive
+            await loadArchivedQuests();
+        } catch (error) {
+            console.error('Failed to restore quest:', error);
+        } finally {
+            setRestoringQuestId(null);
+        }
+    };
+
     return (
         <div className="quest-board">
             <div className="board-header">
@@ -124,7 +143,7 @@ function QuestBoard({ quests, onQuestComplete, onQuestsChange }) {
                     <div className="quests-grid mt-3">
                         {archivedQuests.length > 0 ? (
                             archivedQuests.map(quest => (
-                                <div key={quest.id} className="card quest-card" style={{ opacity: 0.7 }}>
+                                <div key={quest.id} className="card quest-card archive-quest-card" style={{ opacity: 0.82, borderLeft: `4px solid ${quest.status === 'completed' ? 'var(--success)' : 'var(--danger)'}` }}>
                                     <div className="quest-header">
                                         <div className="quest-badges">
                                             <span className={`badge badge-${quest.difficulty.toLowerCase()}`}>
@@ -136,12 +155,66 @@ function QuestBoard({ quests, onQuestComplete, onQuestsChange }) {
                                             }}>
                                                 {quest.status.toUpperCase()}
                                             </span>
+                                            {quest.attribute && (
+                                                <span className="badge" style={{
+                                                    background: 'var(--bg-tertiary)',
+                                                    color: quest.attribute === 'strength' ? 'var(--danger)' :
+                                                           quest.attribute === 'intelligence' ? 'var(--accent-primary)' :
+                                                           quest.attribute === 'vitality' ? 'var(--success)' :
+                                                           quest.attribute === 'creation' ? 'var(--accent-gold)' :
+                                                           quest.attribute === 'network' ? 'var(--rarity-mythic)' : 'var(--text-primary)',
+                                                    border: '1px solid var(--border-color)',
+                                                    fontSize: '0.7rem'
+                                                }}>
+                                                    {quest.attribute.charAt(0).toUpperCase() + quest.attribute.slice(1)}
+                                                </span>
+                                            )}
                                         </div>
-                                        <h3 className="quest-title" style={{ textDecoration: quest.status === 'failed' ? 'line-through' : 'none' }}>
+                                        <h3 className="quest-title" style={{ textDecoration: quest.status === 'failed' ? 'line-through' : 'none', opacity: quest.status === 'failed' ? 0.6 : 1 }}>
                                             {quest.title}
                                         </h3>
                                     </div>
                                     <p className="quest-description">{quest.description}</p>
+                                    <div className="quest-footer" style={{ marginTop: 'auto', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8rem' }}>
+                                            {quest.xp_awarded != null
+                                                ? <span style={{ color: 'var(--accent-gold)', fontWeight: 600 }}>−{quest.xp_awarded} XP on restore</span>
+                                                : <span style={{ color: 'var(--text-tertiary)' }}>No XP to deduct</span>
+                                            }
+                                        </span>
+                                        <button
+                                            className="btn btn-sm"
+                                            style={{
+                                                background: 'linear-gradient(135deg, var(--accent-primary), #7c3aed)',
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '0.35rem 0.9rem',
+                                                borderRadius: '6px',
+                                                cursor: restoringQuestId === quest.id ? 'not-allowed' : 'pointer',
+                                                opacity: restoringQuestId === quest.id ? 0.6 : 1,
+                                                fontWeight: 600,
+                                                fontSize: '0.82rem',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.4rem',
+                                                transition: 'all 0.2s'
+                                            }}
+                                            onClick={() => handleRestore(quest.id)}
+                                            disabled={!!restoringQuestId}
+                                            title="Restore this quest to active status"
+                                        >
+                                            {restoringQuestId === quest.id ? (
+                                                <>
+                                                    <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>↻</span>
+                                                    Restoring…
+                                                </>
+                                            ) : (
+                                                <>
+                                                    ↩ Restore
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
                             ))
                         ) : (

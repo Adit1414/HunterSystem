@@ -14,7 +14,8 @@ import {
   updateDailyQuest,
   deleteQuest,
   completeQuest,
-  failQuest
+  failQuest,
+  restoreQuest
 } from '../controllers/questController.js';
 
 const router = express.Router();
@@ -29,5 +30,6 @@ router.put('/:id', updateQuest);
 router.delete('/:id', deleteQuest);
 router.post('/:id/complete', completeQuest);
 router.post('/:id/fail', failQuest);
+router.post('/:id/restore', restoreQuest);
 
 export default router;

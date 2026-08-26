@@ -217,6 +217,79 @@ export class User {
   }
 
   /**
+   * Subtract XP from user and handle de-leveling if necessary.
+   * Used when a quest is restored (un-completed).
+   * @param {string|number} id User ID
+   * @param {number} amount XP amount to subtract
+   * @param {string} attribute Attribute the XP was originally earned from
+   */
+  static async subtractXp(id, amount, attribute) {
+    const user = await this.getById(id);
+    if (!user) throw new Error('User not found');
+
+    attribute = (attribute || 'strength').toLowerCase();
+
+    const attributes = ['strength', 'creation', 'network', 'vitality', 'intelligence'];
+
+    // We'll work from total_xp_earned to recalculate the correct level/xp state.
+    // This is the most reliable approach: recalculate from scratch.
+    const newTotalXpEarned = Math.max(0, user.total_xp_earned - amount);
+
+    // Walk through levels to find the correct level & current-level XP for newTotalXpEarned
+    let recalcLevel = 1;
+    let remaining = newTotalXpEarned;
+    while (true) {
+      const xpNeeded = getXPForNextLevel(recalcLevel);
+      if (remaining >= xpNeeded) {
+        remaining -= xpNeeded;
+        recalcLevel++;
+      } else {
+        break;
+      }
+    }
+    const newLevel = recalcLevel;
+    const newXp = remaining;
+
+    const levelsLost = user.level - newLevel;
+
+    // Prepare SQL update
+    let sql = `UPDATE users SET level = ?, xp = ?, total_xp_earned = ?, updated_at = CURRENT_TIMESTAMP`;
+    const params = [newLevel, newXp, newTotalXpEarned];
+
+    if (levelsLost > 0) {
+      // Each lost level removes 5 stat points distributed across attributes.
+      // We apply the same 1 guaranteed + proportional logic in reverse (simplified: remove 1 per attr per level, minimum 10).
+      // Simple approach: remove (levelsLost * 1) from each attribute (the guaranteed point per level), clamped to min 10.
+      for (const attr of attributes) {
+        const currentVal = user[attr] || 10;
+        const reduction = levelsLost; // 1 guaranteed point per level per attribute
+        const newVal = Math.max(10, currentVal - reduction);
+        sql += `, ${attr} = ?`;
+        params.push(newVal);
+      }
+
+      // Reset attribute XP tracking (safe default after de-level)
+      for (const attr of attributes) {
+        sql += `, xp_${attr} = ?`;
+        params.push(attr === attribute ? newXp : 0);
+      }
+    }
+
+    sql += ` WHERE id = ?`;
+    params.push(id);
+
+    await db.run(sql, params);
+
+    return {
+      leveledDown: levelsLost > 0,
+      levelsLost,
+      newLevel,
+      newXp,
+      newTotalXpEarned
+    };
+  }
+
+  /**
    * Reset user progress
    */
   static async reset(id) {

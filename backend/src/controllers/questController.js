@@ -272,7 +272,7 @@ export const completeQuest = async (req, res) => {
 
         await db.transaction(async (tx) => {
             const nowIso = new Date().toISOString();
-            await tx.run(`UPDATE quests SET status = 'completed', completed_at = ? WHERE id = ?`, [nowIso, quest.id]);
+            await tx.run(`UPDATE quests SET status = 'completed', completed_at = ?, xp_awarded = ? WHERE id = ?`, [nowIso, xpGained, quest.id]);
             await tx.run(`INSERT INTO quest_history (user_id, quest_id, type, completed_at) VALUES (?, ?, ?, ?)`, [userId, quest.id, quest.type, nowIso]);
             for (const item of rewards.items) {
                 await tx.run(`INSERT INTO items (id, user_id, name, description, rarity, type, obtained_at) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`, [item.id, userId, item.name, item.description, item.rarity, item.type]);
@@ -360,5 +360,55 @@ export const failQuest = async (req, res) => {
     } catch (error) {
         console.error('Error failing quest:', error);
         res.status(500).json({ error: 'Failed to fail quest' });
+    }
+};
+
+export const restoreQuest = async (req, res) => {
+    try {
+        const userId = req.dbUserId;
+        const quest = await Quest.getById(req.params.id, userId);
+        if (!quest) return res.status(404).json({ error: 'Quest not found' });
+        if (quest.status === 'active') return res.status(400).json({ error: 'Quest is already active' });
+
+        // Determine how much XP to deduct:
+        // Use xp_awarded if recorded (for completed quests), otherwise 0 (failed quests gave no XP)
+        const xpToDeduct = (quest.status === 'completed' && quest.xp_awarded) ? quest.xp_awarded : 0;
+        const attribute = quest.attribute || 'strength';
+
+        // Deduct XP from user (recalculates level & stats)
+        let xpResult = null;
+        if (xpToDeduct > 0) {
+            xpResult = await User.subtractXp(userId, xpToDeduct, attribute);
+        }
+
+        // Reset quest back to active
+        await Quest.restore(quest.id);
+
+        const updatedUser = await User.getById(userId);
+
+        res.json({
+            message: 'Quest restored to active!',
+            xpDeducted: xpToDeduct,
+            levelDown: xpResult?.leveledDown ? {
+                levelsLost: xpResult.levelsLost,
+                newLevel: xpResult.newLevel
+            } : null,
+            user: {
+                level: updatedUser.level,
+                xp: updatedUser.xp,
+                totalXpEarned: updatedUser.total_xp_earned,
+                stats: {
+                    strength: updatedUser.strength,
+                    creation: updatedUser.creation,
+                    network: updatedUser.network,
+                    vitality: updatedUser.vitality,
+                    intelligence: updatedUser.intelligence,
+                    statPoints: updatedUser.stat_points
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error restoring quest:', error);
+        res.status(500).json({ error: 'Failed to restore quest' });
     }
 };

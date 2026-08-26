@@ -123,6 +123,12 @@ export const failQuest = async (id) => {
   return response.data;
 };
 
+export const restoreQuest = async (id) => {
+  const response = await api.post(`/quests/${id}/restore`);
+  return response.data;
+};
+
+
 // ===== Item API =====
 
 export const getItems = async (params = {}) => {

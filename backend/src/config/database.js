@@ -448,6 +448,22 @@ export async function initializeDatabase() {
     }
     // -----------------------------------
 
+    // --- MIGRATION FOR XP AWARDED ---
+    try {
+      if (db.type === 'postgres') {
+        await db.exec(`ALTER TABLE quests ADD COLUMN IF NOT EXISTS xp_awarded INTEGER DEFAULT NULL`);
+      } else {
+        const columns = await db.query("PRAGMA table_info(quests)");
+        if (!columns.some(col => col.name === 'xp_awarded')) {
+          console.log('Migrating: Adding xp_awarded to quests...');
+          await db.exec("ALTER TABLE quests ADD COLUMN xp_awarded INTEGER DEFAULT NULL");
+        }
+      }
+    } catch (err) {
+      console.error('Migration Error (XP Awarded):', err.message);
+    }
+    // -----------------------------------
+
     // --- MIGRATION FOR QUEST HISTORY ---
     try {
       console.log('Migrating: Seeding quest_history from existing completed quests... (One time)');
