@@ -11,6 +11,21 @@ function Inventory({ items, onItemsChange }) {
         filter === 'All' || item.type.toLowerCase() === filter.toLowerCase()
     );
 
+    // Group items by name to avoid duplicates and show quantity
+    const groupedItems = [];
+    const itemMap = new Map();
+
+    filteredItems.forEach(item => {
+        const normalizedName = item.name.trim().toLowerCase();
+        if (itemMap.has(normalizedName)) {
+            itemMap.get(normalizedName).quantity += 1;
+        } else {
+            const newItem = { ...item, quantity: 1 };
+            itemMap.set(normalizedName, newItem);
+            groupedItems.push(newItem);
+        }
+    });
+
     const handleUse = (id) => {
         console.log(`Used item ${id}`);
         // Implement use logic
@@ -38,8 +53,8 @@ function Inventory({ items, onItemsChange }) {
             </div>
 
             <div className="inventory-grid">
-                {filteredItems.length > 0 ? (
-                    filteredItems.map(item => (
+                {groupedItems.length > 0 ? (
+                    groupedItems.map(item => (
                         <ItemCard
                             key={item.id}
                             item={item}

@@ -43,7 +43,7 @@ function ItemCard({ item, onUse, onEquip }) {
                 </div>
             )}
 
-            <div className="item-actions">
+            <div className="item-actions" style={{ alignItems: 'center' }}>
                 {item.type === 'Consumable' && (
                     <button className="btn btn-primary btn-sm" onClick={() => onUse(item.id)}>
                         Use
@@ -53,6 +53,12 @@ function ItemCard({ item, onUse, onEquip }) {
                     <button className="btn btn-secondary btn-sm" onClick={() => onEquip(item.id)}>
                         Equip
                     </button>
+                )}
+                
+                {item.quantity > 1 && (
+                    <div className="item-quantity-badge" style={{ marginLeft: 'auto', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
+                        x{item.quantity}
+                    </div>
                 )}
             </div>
         </div>
