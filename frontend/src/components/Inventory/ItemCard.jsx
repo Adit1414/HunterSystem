@@ -14,11 +14,16 @@ function ItemCard({ item, onUse, onEquip }) {
     };
 
     const borderColor = rarityColors[item.rarity.toLowerCase()] || 'var(--border-color)';
+    const isStreakFreeze = item.name === "Ice Monarch's blessing";
+    const nameStyle = { 
+        color: borderColor,
+        textShadow: isStreakFreeze ? '0 0 8px rgba(100, 200, 255, 0.8)' : 'none'
+    };
 
     return (
         <div className="card item-card" style={{ borderColor: borderColor }}>
             <div className="item-header">
-                <h4 className="item-name" style={{ color: borderColor }}>{item.name}</h4>
+                <h4 className="item-name" style={nameStyle}>{item.name}</h4>
                 <span className="badge" style={{ backgroundColor: borderColor, color: 'white' }}>
                     {item.rarity.charAt(0).toUpperCase() + item.rarity.slice(1)}
                 </span>

@@ -13,7 +13,6 @@ import { getXPForNextLevel, getRankName } from '../services/progressionEngine.js
 const TARGET_USER_ID = 1;
 // 1 is adi
 // 14 is arhan
-// 1 is aditya
 
 // --- OPTION 1: UPDATE PROGRESSION ---
 // Set NEW_TOTAL_XP to a number to update your Level and Rank automatically.
@@ -23,11 +22,11 @@ const NEW_TOTAL_XP = null; // Example: 5000
 // --- OPTION 2: UPDATE ATTRIBUTES ---
 // Set specific attributes to new values. Set to null to leave unchanged.
 const NEW_ATTRIBUTES = {
-    strength: 24,      // Example: 50
-    creation: 68,
-    network: 33,
-    vitality: 29,
-    intelligence: 96,
+    strength: 27,      // Example: 50
+    creation: 80,
+    network: 42,
+    vitality: 36,
+    intelligence: 105,
     stat_points: null    // Unspent points
 };
 

@@ -308,6 +308,16 @@ export function generateQuestRewards(difficulty, levelUpRewards = []) {
         choices
       });
 
+    } else if (reward.type === 'streak_freeze') {
+      rewards.items.push({
+        id: randomUUID(),
+        name: "Ice Monarch's blessing",
+        description: "A legendary artifact that protects your streak for one day if you fail to reach the minimum 3 daily quest threshold. (One-time use)",
+        rarity: "legendary",
+        type: "armor"
+      });
+      rewards.special.push(reward);
+
     } else {
       rewards.special.push(reward);
     }

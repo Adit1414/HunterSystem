@@ -55,6 +55,26 @@ export async function checkAndResetDailyQuests() {
                     console.log(`[DailyQuestService] User ${user.id}: ${completedCount} completed daily quests since last reset.`);
 
                     if (completedCount < 3) {
+                        // Check if user has an "Ice Monarch's blessing"
+                        const freezes = await tx.query(`SELECT id FROM items WHERE name = 'Ice Monarch''s blessing' AND user_id = ? LIMIT 1`, [user.id]);
+                        if (freezes && freezes.length > 0) {
+                            console.log(`[DailyQuestService] User ${user.id}: Missed 3 daily quests, using Ice Monarch's blessing to protect streak!`);
+                            await tx.run(`DELETE FROM items WHERE id = ?`, [freezes[0].id]);
+                            
+                            // Insert dummy quests for yesterday so streak calculates correctly
+                            // The cron runs at midnight IST, so 1 hour ago ensures it counts for the previous day
+                            const yesterdayIso = new Date(Date.now() - 3600 * 1000).toISOString();
+                            const needed = 3 - completedCount;
+                            for (let i = 0; i < needed; i++) {
+                                await tx.run(`INSERT INTO quest_history (user_id, quest_id, type, completed_at) VALUES (?, 'streak-freeze', 'daily', ?)`, [user.id, yesterdayIso]);
+                            }
+                            
+                            if (consecutiveFailed > 0) {
+                                await tx.run(`UPDATE users SET consecutive_failed_dailies = 0 WHERE id = ?`, [user.id]);
+                            }
+                            continue;
+                        }
+
                         // Skip penalty if user has opted out
                         if (user.daily_penalty_disabled) {
                             console.log(`[DailyQuestService] User ${user.id}: Penalty skipped (daily penalty disabled).`);

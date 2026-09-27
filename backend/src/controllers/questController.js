@@ -268,6 +268,57 @@ export const completeQuest = async (req, res) => {
             }
         }
 
+        const oldStats = await User.getStats(userId);
+        const oldStreak = oldStats.streak;
+        let newStreak = oldStreak;
+        
+        if (quest.type === 'daily') {
+            const istOffsetMs = 5.5 * 60 * 60 * 1000;
+            const istNow = new Date(Date.now() + istOffsetMs);
+            const todayStr = istNow.toISOString().split('T')[0];
+            const simHistory = { ...oldStats.history };
+            simHistory[todayStr] = (simHistory[todayStr] || 0) + 1;
+            
+            let simStreak = 0;
+            let checkDate = null;
+            const istYesterday = new Date(istNow.getTime() - 86400000);
+            const yesterdayStr = istYesterday.toISOString().split('T')[0];
+            
+            if (simHistory[todayStr] >= 3) {
+                checkDate = new Date(istNow);
+            } else if (simHistory[yesterdayStr] >= 3) {
+                checkDate = new Date(istYesterday);
+            }
+            if (checkDate) {
+                while (true) {
+                    const checkStr = checkDate.toISOString().split('T')[0];
+                    if ((simHistory[checkStr] || 0) >= 3) {
+                        simStreak++;
+                        checkDate.setUTCDate(checkDate.getUTCDate() - 1);
+                    } else {
+                        break;
+                    }
+                }
+            }
+            newStreak = simStreak;
+        }
+
+        const isStreakThreshold = (streak) => {
+            if (streak === 5) return true;
+            if (streak >= 15) {
+                let val = 15;
+                while (val <= streak) {
+                    if (val === streak) return true;
+                    val *= 2;
+                }
+            }
+            return false;
+        };
+
+        if (newStreak > oldStreak && isStreakThreshold(newStreak)) {
+            specialRewards.push({ type: 'streak_freeze', message: `Streak reached ${newStreak} Days!` });
+        }
+
         const rewards = generateQuestRewards(quest.difficulty, specialRewards);
 
         await db.transaction(async (tx) => {

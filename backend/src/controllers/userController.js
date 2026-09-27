@@ -1,6 +1,7 @@
 import db from '../config/database.js';
 import User from '../models/User.js';
 import { getXPForNextLevel, getRankName, getProgressToNextLevel } from '../services/progressionEngine.js';
+import { randomUUID } from 'crypto';
 
 export const getUserProgress = async (req, res) => {
     try {
@@ -11,7 +12,51 @@ export const getUserProgress = async (req, res) => {
         const xpForNextLevel = getXPForNextLevel(user.level);
         const progressPercentage = getProgressToNextLevel(user.xp, user.level);
         const rankName = getRankName(user.level);
-        const stats = await User.getStats(userId);
+        let stats = await User.getStats(userId);
+        
+        let retroactiveRewards = null;
+        const retroConfigKey = `retro_freeze_${userId}`;
+        const retroConfig = await db.get('SELECT value FROM system_config WHERE key = ?', [retroConfigKey]);
+        
+        if (!retroConfig && stats.streak >= 5) {
+            let freezesToGive = 0;
+            if (stats.streak >= 5) freezesToGive = 1;
+            let val = 15;
+            while (val <= stats.streak) {
+                freezesToGive++;
+                val *= 2;
+            }
+            
+            if (freezesToGive > 0) {
+                retroactiveRewards = { items: [], special: [] };
+                
+                await db.transaction(async (tx) => {
+                    for (let i = 0; i < freezesToGive; i++) {
+                        const itemData = {
+                            id: randomUUID(),
+                            user_id: userId,
+                            name: "Ice Monarch's blessing",
+                            description: "A legendary artifact that protects your streak for one day if you fail to reach the minimum 3 daily quest threshold. (One-time use)",
+                            rarity: "legendary",
+                            type: "armor"
+                        };
+                        
+                        await tx.run(`INSERT INTO items (id, user_id, name, description, rarity, type, obtained_at) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`, 
+                        [itemData.id, itemData.user_id, itemData.name, itemData.description, itemData.rarity, itemData.type]);
+                        
+                        retroactiveRewards.items.push(itemData);
+                    }
+                    
+                    await tx.run(`INSERT INTO system_config (key, value) VALUES (?, '1') ON CONFLICT(key) DO UPDATE SET value = '1'`, [retroConfigKey]);
+                });
+                
+                retroactiveRewards.special.push({ type: 'streak_freeze', message: `Retroactive Milestone: Streak reached ${stats.streak} Days!` });
+                stats = await User.getStats(userId); // Refetch stats to include new items
+            }
+        } else if (!retroConfig) {
+            // Mark it as checked even if they don't have a high enough streak to prevent checking every load
+            await db.run(`INSERT INTO system_config (key, value) VALUES (?, '1') ON CONFLICT(key) DO UPDATE SET value = '1'`, [retroConfigKey]);
+        }
 
         res.json({
             user: {
@@ -33,7 +78,8 @@ export const getUserProgress = async (req, res) => {
                     statPoints: user.stat_points || 0
                 }
             },
-            stats: { quests: stats.quests, items: stats.items, streak: stats.streak, history: stats.history }
+            stats: { quests: stats.quests, items: stats.items, streak: stats.streak, history: stats.history },
+            retroactiveRewards
         });
     } catch (error) {
         console.error('Error fetching user:', error);
