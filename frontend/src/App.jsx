@@ -50,6 +50,10 @@ function AppContent() {
       setStats(userData.stats);
       setQuests(questsData.quests);
       setItems(itemsData.items);
+      
+      if (userData.retroactiveRewards && (userData.retroactiveRewards.items.length > 0 || userData.retroactiveRewards.special.length > 0)) {
+        setRewardData(userData.retroactiveRewards);
+      }
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -62,6 +66,10 @@ function AppContent() {
       const userData = await getUser();
       setUser(userData.user);
       setStats(userData.stats);
+      
+      if (userData.retroactiveRewards && (userData.retroactiveRewards.items.length > 0 || userData.retroactiveRewards.special.length > 0)) {
+        setRewardData(userData.retroactiveRewards);
+      }
     } catch (error) {
       console.error('Failed to refresh user:', error);
     }

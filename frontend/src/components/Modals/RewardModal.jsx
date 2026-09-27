@@ -2,7 +2,7 @@ import React from 'react';
 import './Modals.css';
 
 function RewardModal({ data, onClose, onItemClaim }) {
-    const { xp, gold, items } = data;
+    const { xp, gold, items, special } = data;
 
     return (
         <div className="modal-overlay">
@@ -10,6 +10,16 @@ function RewardModal({ data, onClose, onItemClaim }) {
                 <h2>MISSION COMPLETE</h2>
 
                 <div className="rewards-list">
+                    {special && special.length > 0 && (
+                        <div className="special-rewards-section" style={{ marginBottom: '15px' }}>
+                            {special.map((s, idx) => (
+                                <div key={idx} className="reward-item special-reward" style={{ color: 'var(--primary-color)', fontWeight: 'bold' }}>
+                                    <span className="reward-icon">✨</span>
+                                    <span className="reward-text">{s.message || 'Special Reward!'}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                     {xp > 0 && (
                         <div className="reward-item xp">
                             <span className="reward-icon">⚔️</span>
@@ -40,7 +50,10 @@ function RewardModal({ data, onClose, onItemClaim }) {
                 </div>
 
                 <div className="modal-actions">
-                    <button className="btn btn-primary" onClick={onClose}>
+                    <button className="btn btn-primary" onClick={() => {
+                        if (onItemClaim) onItemClaim();
+                        onClose();
+                    }}>
                         Claim Rewards
                     </button>
                 </div>
