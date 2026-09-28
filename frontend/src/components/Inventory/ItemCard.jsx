@@ -23,10 +23,10 @@ function ItemCard({ item, onUse, onEquip }) {
     return (
         <div className="card item-card" style={{ borderColor: borderColor }}>
             <div className="item-header">
-                <h4 className="item-name" style={nameStyle}>{item.name}</h4>
                 <span className="badge" style={{ backgroundColor: borderColor, color: 'white' }}>
                     {item.rarity.charAt(0).toUpperCase() + item.rarity.slice(1)}
                 </span>
+                <h4 className="item-name" style={nameStyle}>{item.name}</h4>
             </div>
 
             <div className="item-type">{item.type.charAt(0).toUpperCase() + item.type.slice(1)}</div>
