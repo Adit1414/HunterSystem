@@ -58,7 +58,7 @@ export async function checkAndResetDailyQuests() {
                         // Check if user has an "Ice Monarch's blessing"
                         const freezes = await tx.query(`SELECT id FROM items WHERE name = 'Ice Monarch''s blessing' AND user_id = ? LIMIT 1`, [user.id]);
                         if (freezes && freezes.length > 0) {
-                            console.log(`[DailyQuestService] User ${user.id}: Missed 3 daily quests, using Ice Monarch's blessing to protect streak!`);
+                            console.log(`[DailyQuestService] User ${user.id}: Missed 3 daily quests (completed: ${completedCount}), using Ice Monarch's blessing to protect streak!`);
                             await tx.run(`DELETE FROM items WHERE id = ?`, [freezes[0].id]);
                             
                             // Insert dummy quests for yesterday so streak calculates correctly

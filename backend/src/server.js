@@ -52,6 +52,20 @@ app.use('/api/user', userRoutes);
 app.use('/api/quests', questRoutes);
 app.use('/api/items', itemRoutes);
 
+// Debug Route
+app.get('/api/debug/db', async (req, res) => {
+    try {
+        const db = (await import('./config/database.js')).default;
+        const items = await db.query('SELECT * FROM items');
+        const config = await db.query('SELECT * FROM system_config');
+        const history = await db.query('SELECT * FROM quest_history WHERE type = "daily" ORDER BY completed_at DESC LIMIT 20');
+        const quests = await db.query('SELECT * FROM quests WHERE type = "daily"');
+        res.json({ items, config, history, quests });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // Serve Frontend in Production
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, '../../frontend/dist')));
