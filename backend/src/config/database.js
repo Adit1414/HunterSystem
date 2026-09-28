@@ -5,6 +5,7 @@ import fs from 'fs';
 import pg from 'pg';
 import dotenv from 'dotenv';
 import { promisify } from 'util';
+import { ITEM_DESCRIPTIONS } from '../services/rewardGenerator.js';
 
 dotenv.config();
 
@@ -512,6 +513,22 @@ export async function initializeDatabase() {
       `);
     } catch (err) {
       console.error('Migration Error (Attribute Minimum Fix):', err.message);
+    }
+    // -----------------------------------
+
+    // --- MIGRATION FOR ITEM DESCRIPTIONS ---
+    try {
+      console.log('Migrating: Fixing item descriptions to match static mapping...');
+      // Execute a single transaction if possible, or execute individually
+      await db.transaction(async (tx) => {
+        for (const [name, desc] of Object.entries(ITEM_DESCRIPTIONS)) {
+          // Use positional parameters. SQLite uses ?, Postgres uses $1, $2 which is handled by DBAdapter proxy
+          await tx.run(`UPDATE items SET description = ? WHERE name = ?`, [desc, name]);
+        }
+      });
+      console.log('✓ Item descriptions migrated successfully');
+    } catch (err) {
+      console.error('Migration Error (Item Descriptions):', err.message);
     }
     // -----------------------------------
 

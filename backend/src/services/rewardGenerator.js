@@ -41,136 +41,95 @@ const ITEM_NAMES = {
   }
 };
 
-// Description templates by Type and Rarity
-const DESCRIPTION_TEMPLATES = {
-  weapon: {
-    common: [
-      'A standard issue weapon, mass-produced for city guards.',
-      'Simple but reliable throughout the early stages of hunting.',
-      'Shows signs of wear, but the edge is still keen enough.',
-      'A beginner\'s weapon. better than fighting with bare hands.'
-    ],
-    rare: [
-      'Forged with superior steel, it hums slightly when swung.',
-      'A weapon of fine craftsmanship, balanced perfectly for combat.',
-      'Etched with minor runes to enhance its durability.',
-      'Preferred by B-rank hunters for its reliability.'
-    ],
-    epic: [
-      'Radiates a faint magical aura visible to those with high Intelligence.',
-      'Crafted from monster bones and reinforced with magic.',
-      'A weapon that has tasted the blood of high-ranking beasts.',
-      'Vibrates with energy, longing for battle.'
-    ],
-    legendary: [
-      'A masterpiece that seems to move on its own accord.',
-      'Forged in the breath of a dragon, it sears the air around it.',
-      'Legends say this weapon once felled a Titan.',
-      'Its power is so great it requires a strong will to wield.'
-    ],
-    mythic: [
-      'A weapon that defies the laws of physics. It cuts through reality itself.',
-      'Contains the soul of a vanquished Monarch.',
-      'Merely looking at it strikes fear into the hearts of monsters.',
-      'The pinnacle of destruction, created by the Absolute Being.'
-    ]
-  },
-  armor: {
-    common: [
-      'Basic protection against minor scratches and bites.',
-      'Made of treated leather and iron scraps.',
-      'Lightweight, but don\'t expect it to stop a heavy blow.',
-      'Standard hunter gear found in local shops.'
-    ],
-    rare: [
-      'Reinforced with mana-hardened steel plates.',
-      'Offers decent protection without sacrificing mobility.',
-      'A sturdy set of armor that has seen many battles.',
-      'Designed to deflect claws and fangs of mid-tier beasts.'
-    ],
-    epic: [
-      'Scales of a dungeon boss make up the core of this armor.',
-      'Enchanted to reduce the weight while increasing defense.',
-      'Glows softly when attacked, absorbing impact energy.',
-      'Worn by elite assault team members.'
-    ],
-    legendary: [
-      'Impervious to normal steel. Only magic can scratch it.',
-      'Forged from the hide of an Ancient Dragon.',
-      'Seems to regenerate minor damage properly over time.',
-      'A legendary defense that turns its wearer into a fortress.'
-    ],
-    mythic: [
-      'Armor woven from shadows and void energy.',
-      'Physical attacks seem to phase right through it.',
-      'The ultimate defense, rejecting all malice directed at it.',
-      'You feel invincible while wearing this divine vestment.'
-    ]
-  },
-  accessory: {
-    common: [
-      'A simple charm sold for good luck.',
-      'Made of polished stone. It looks nice.',
-      'A small trinket that offers a tiny boost.',
-      'Common jewelry modified to hold a little mana.'
-    ],
-    rare: [
-      'Contains a small mana crystal that pulses correctly.',
-      'Helps stabilize the flow of magic in the body.',
-      'A silver piece enhanced by an enchanter.',
-      'Found in the hoard of a Goblin Champion.'
-    ],
-    epic: [
-      'An ancient artifact recovered from a Red Gate.',
-      'Significantly amplifies the wearer\'s magical presence.',
-      'Warm to the touch, it wards off mental fatigue.',
-      'A jeweled accessory that shines with inner light.'
-    ],
-    legendary: [
-      'Allows the user to store immense amounts of mana.',
-      'A royal heirloom from a fallen kingdom inside a Gate.',
-      'Time seems to move slower for the wearer.',
-      'Grants power usually reserved for National Level Hunters.'
-    ],
-    mythic: [
-      'A fragment of the World Tree, endless energy flows from it.',
-      'Connects the wearer directly to the mana stream.',
-      'An artifact that can rewrite the laws of luck.',
-      'The cosmos seems to align for whoever wears this.'
-    ]
-  },
-  consumable: {
-    common: [
-      'Tastes like stale bread, but restores health.',
-      'A bitter liquid that numbs pain.',
-      'Standard rations for dungeon raids.',
-      'Basic first-aid supplies.'
-    ],
-    rare: [
-      'A glowing blue liquid that refreshes the mind.',
-      'Potent herbs compressed into a pill.',
-      'Instantly closes minor wounds.',
-      'A drink that revitalizes stamina immediately.'
-    ],
-    epic: [
-      'Golden elixir that cures all ailments.',
-      'A scroll containing a powerful one-time spell.',
-      'Restores a large amount of mana in seconds.',
-      'Can regrow lost limbs if used immediately.'
-    ],
-    legendary: [
-      'The "Elixir of Life" sought by many.',
-      'Unlocks dormant potential within the body.',
-      'A crystal that grants a permanent stat boost.',
-      'Can resurrect a hunter if they died recently (Theoretically).'
-    ],
-    mythic: [
-      'Essence of a god. Consuming this transcends humanity.',
-      'A drop of the Shadow Monarch\'s blood.',
-      'Grants knowledge of the universe.',
-      'Transforms the body into a vessel of pure mana.'
-    ]
-  }
+// 1:1 Mapping of item names to descriptions
+export const ITEM_DESCRIPTIONS = {
+  // Weapons
+  'Iron Dagger': 'A plain iron dagger issued to hunters who have yet to prove themselves.',
+  'Wooden Staff': 'A humble staff used by novice mages to channel their first traces of mana.',
+  'Short Sword': 'A reliable blade favored by hunters still learning the basics of combat.',
+  'Training Bow': 'A simple bow designed to sharpen the aim of inexperienced hunters.',
+  'Steel Blade': 'Forged from refined steel, this blade can withstand the claws of mid-tier monsters.',
+  'Mage\'s Staff': 'A rune-etched staff that greatly improves the flow of mana through its wielder.',
+  'Hunter\'s Longbow': 'A finely balanced bow built for hunters who prefer to kill from a distance.',
+  'Battle Axe': 'A heavy axe capable of cleaving through both armor and monster bone.',
+  'Crimson Edge': 'A blood-red blade that grows sharper with every powerful foe it strikes.',
+  'Arcane Scepter': 'An ancient scepter that crackles with concentrated magical energy.',
+  'Shadow Bow': 'A dark bow whose arrows seem to disappear before finding their target.',
+  'Frost Hammer': 'A massive hammer that freezes whatever it strikes.',
+  'Demon Fang': 'Forged from the fang of a high-ranking demon, it radiates a sinister aura.',
+  'Staff of the Ancients': 'A relic said to contain the accumulated wisdom of countless forgotten mages.',
+  'Moonlight Arrows': 'Arrows that glow beneath the moon and never seem to lose their mark.',
+  'Titan\'s Maul': 'A colossal weapon said to have been wielded by a giant that could shatter mountains.',
+  'Sovereign\'s Wrath': 'A weapon forged for beings whose power stands far beyond that of ordinary hunters.',
+  'World Tree Staff': 'A sacred staff infused with the endless mana of the World Tree.',
+  'Void Reaper': 'A blade that cuts through more than flesh, severing space itself.',
+  'Dragon Slayer': 'A legendary weapon created for one purpose: bringing down creatures thought invincible.',
+
+  // Armor
+  'Leather Vest': 'Basic leather protection worn by hunters entering their first Gates.',
+  'Cloth Robe': 'A lightweight robe offering minimal protection while allowing mana to flow freely.',
+  'Iron Helmet': 'A simple iron helmet meant to keep a novice hunter\'s head intact.',
+  'Worn Boots': 'Old hunter boots that have survived more Gates than their appearance suggests.',
+  'Knight\'s Plate': 'Reinforced plate armor built to withstand the attacks of powerful beasts.',
+  'Mage Robes': 'Mana-infused robes designed to protect a mage without restricting spellcasting.',
+  'Steel Greaves': 'Heavy steel greaves capable of turning aside claws and crushing blows.',
+  'Hunter\'s Cloak': 'A durable cloak prized by hunters who rely on speed, stealth, and surprise.',
+  'Dragonscale Mail': 'Armor forged from the scales of a dragon, each piece harder than ordinary steel.',
+  'Shadowweave Robes': 'Dark robes woven with shadow magic that seem to blur their wearer\'s presence.',
+  'Titanium Armor': 'Exceptionally durable armor built to endure attacks that would crush lesser equipment.',
+  'Phoenix Mantle': 'A blazing mantle that radiates warmth and slowly restores its wearer\'s strength.',
+  'Immortal Plate': 'Armor so resilient that even devastating blows struggle to leave a lasting mark.',
+  'Astral Vestments': 'Otherworldly garments that shimmer as though woven from the night sky itself.',
+  'Demon Lord Armor': 'Armor forged from the remains of a Demon Lord, carrying a terrifying aura.',
+  'Celestial Garb': 'Sacred armor said to have been blessed by beings beyond the human world.',
+  'Monarch\'s Regalia': 'The ceremonial armor of a ruler whose authority transcends the laws of ordinary hunters.',
+  'Eternal Night Armor': 'Armor cloaked in an endless darkness that swallows attacks before they reach the wearer.',
+  'Divine Protection': 'A miraculous defense that rejects every force deemed hostile by its wearer.',
+  'World Breaker Plate': 'Armor forged for one capable of standing at the center of a world-ending battle.',
+
+  // Accessories
+  'Simple Ring': 'An ordinary ring carrying a faint trace of mana.',
+  'Leather Band': 'A modest band worn by hunters seeking a small boost without drawing attention.',
+  'Bronze Amulet': 'A simple charm believed to bring luck inside dangerous Gates.',
+  'Glass Earring': 'A fragile-looking earring that surprisingly holds a small amount of mana.',
+  'Silver Ring': 'Refined silver shaped around a tiny mana crystal.',
+  'Enchanted Bracelet': 'A carefully enchanted bracelet that stabilizes the flow of mana through the body.',
+  'Jade Necklace': 'A jade pendant said to calm the mind in the presence of monstrous mana.',
+  'Sapphire Earrings': 'Sapphire earrings that amplify the wearer\'s sensitivity to magical energy.',
+  'Ring of Power': 'A powerful ring that greatly amplifies the strength of its wearer.',
+  'Mana Bracers': 'Magical bracers capable of storing and releasing vast amounts of mana.',
+  'Amulet of Vitality': 'A precious amulet that strengthens the body and accelerates recovery.',
+  'Shadow Earrings': 'Earrings infused with shadow magic that make their wearer harder to detect.',
+  'Ring of the Monarch': 'A royal ring imbued with the overwhelming authority of a Monarch.',
+  'Bracelet of Time': 'An ancient bracelet said to distort the flow of time around its wearer.',
+  'Heart of the Dragon': 'A gem resembling a dragon\'s heart, pulsing with immense magical power.',
+  'Eyes of Eternity': 'A mysterious pair of earrings that seem capable of seeing beyond the present moment.',
+  'Absolute Being\'s Ring': 'A relic of unimaginable power, said to have belonged to the creator of the world.',
+  'Infinity Band': 'A ring containing a source of mana that appears to have no end.',
+  'World Tear Pendant': 'A pendant born from a fracture in reality itself.',
+  'Void Essence': 'A crystallized fragment of the void, containing power that defies all known laws.',
+
+  // Consumables
+  'Health Potion': 'A basic potion that closes wounds and restores a small amount of health.',
+  'Mana Potion': 'A bitter blue potion that replenishes depleted mana.',
+  'Bread': 'Simple hunter rations meant to keep the body going during long expeditions.',
+  'Water Flask': 'A plain flask of purified water carried by hunters on extended dungeon runs.',
+  'Greater Health Potion': 'A concentrated potion capable of restoring serious injuries in moments.',
+  'Elixir of Strength': 'A potent elixir that temporarily fills the body with unnatural physical power.',
+  'Mana Crystal': 'A crystallized source of mana that releases its energy when consumed.',
+  'Stamina Tonic': 'A powerful tonic that rapidly restores a hunter\'s exhausted body.',
+  'Full Recovery Potion': 'A rare potion capable of restoring the body from the brink of collapse.',
+  'Buff Scroll': 'A one-use magical scroll that temporarily enhances the user\'s abilities.',
+  'Stat Reset Ticket': 'A strange artifact capable of undoing the distribution of a hunter\'s growth.',
+  'XP Boost (1hr)': 'A mysterious potion that dramatically accelerates the growth of a hunter for one hour.',
+  'Instant Dungeon Key': 'A mysterious key capable of opening a Gate without warning.',
+  'Skill Book': 'An ancient tome containing the knowledge required to awaken a new ability.',
+  'Awakening Stone': 'A rare stone said to awaken dormant potential within those who possess it.',
+  'Miracle Elixir': 'A legendary elixir said to restore even injuries that should have been beyond recovery.',
+  'Shadow Extract': 'A concentrated essence of shadow capable of transforming mana beyond its natural limits.',
+  'Dimensional Rift Key': 'A forbidden key said to unlock passages between distant dimensions.',
+  'Job Change Stone': 'A mysterious stone capable of reshaping a hunter\'s very path of power.',
+  'Monarch\'s Blessing': 'A fragment of a Monarch\'s power that temporarily elevates the one who consumes it.'
 };
 
 /**
@@ -209,9 +168,8 @@ export function generateItem(difficulty, forcedRarity = null) {
   const namePool = ITEM_NAMES[type][rarity];
   const name = namePool[Math.floor(Math.random() * namePool.length)];
 
-  // Pick random description from type+rarity combination
-  const descPool = DESCRIPTION_TEMPLATES[type][rarity];
-  const description = descPool[Math.floor(Math.random() * descPool.length)];
+  // Pick fixed description based on item name
+  const description = ITEM_DESCRIPTIONS[name] || "An unknown item emitting strange energy.";
 
   return {
     id: randomUUID(),

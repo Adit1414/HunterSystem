@@ -8,6 +8,7 @@ yarn.lock
 *.db-wal
 *.db-shm
 backend/database/
+backend/src/scripts/*
 
 # Environment
 .env
