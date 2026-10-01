@@ -31,6 +31,10 @@ function Header({ user, activeView, setActiveView, onRefresh, onSignOut }) {
                     className={`nav-btn ${activeView === 'inventory' ? 'active' : ''}`}
                     onClick={() => setActiveView('inventory')}
                 >Inventory</button>
+                <button
+                    className={`nav-btn ${activeView === 'settings' ? 'active' : ''}`}
+                    onClick={() => setActiveView('settings')}
+                >Settings</button>
             </nav>
 
             <div className='header-actions'>
@@ -39,10 +43,6 @@ function Header({ user, activeView, setActiveView, onRefresh, onSignOut }) {
                         <span className='quick-stat'>LVL {user.level}</span>
                         <span className='quick-stat rank'>  {user.rankName}</span>
                     </div>
-                )}
-                <button className='btn-icon' onClick={onRefresh} title="Refresh">🔄️</button>
-                {onSignOut && (
-                    <button className='btn-icon' onClick={onSignOut} title="Sign Out">🚪</button>
                 )}
             </div>
         </header>

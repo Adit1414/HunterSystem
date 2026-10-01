@@ -65,3 +65,19 @@
     font-weight: 600;
     color: var(--accent-gold);
 }
+
+.header-actions {
+    padding: 0.5rem 2rem 1rem 2rem;
+    display: flex;
+    align-items: center;
+}
+
+.user-quick-stats {
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.quick-stat.rank {
+    color: var(--accent-gold);
+    margin-left: 0.5rem;
+}

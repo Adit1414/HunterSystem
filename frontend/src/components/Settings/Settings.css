@@ -1,0 +1,60 @@
+.settings-container {
+    padding: 24px;
+    color: var(--text-primary, #ffffff);
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.settings-container h2 {
+    margin-bottom: 24px;
+    font-size: 1.8rem;
+    color: var(--accent-primary);
+}
+
+.settings-section {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.settings-section h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+}
+
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+}
+
+.settings-btn {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.settings-btn:hover {
+    background: var(--bg-hover);
+}
+
+.settings-btn.danger {
+    background: var(--danger);
+    color: white;
+}
+
+.settings-btn.danger:hover {
+    background: #cc0000;
+}

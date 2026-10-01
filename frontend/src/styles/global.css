@@ -66,6 +66,32 @@
   --glow-gold: 0 0 20px rgba(255, 215, 0, 0.3);
 }
 
+[data-theme="light"] {
+  /* Color Palette - Light Cyan */
+  --bg-primary: #e0f7fa; /* Light cyan */
+  --bg-secondary: #b2ebf2;
+  --bg-tertiary: #80deea;
+  --bg-hover: #4dd0e1;
+
+  /* Accents */
+  --accent-primary: #00838f; /* Darker cyan for text/contrast */
+  --accent-gold: #f57f17; /* Darker gold */
+  --accent-shadow: #283593; /* Purple-blue */
+
+  /* Text */
+  --text-primary: #000000;
+  --text-secondary: #37474f;
+  --text-tertiary: #546e7a;
+
+  /* Borders */
+  --border-color: #26c6da;
+  --border-hover: #00acc1;
+
+  /* Glow Effects */
+  --glow-cyan: 0 0 20px rgba(0, 131, 143, 0.3);
+  --glow-gold: 0 0 20px rgba(245, 127, 23, 0.3);
+}
+
 * {
   margin: 0;
   padding: 0;

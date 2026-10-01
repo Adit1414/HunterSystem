@@ -5,6 +5,8 @@ import Dashboard from './components/Dashboard/Dashboard';
 import QuestBoard from './components/Quests/QuestBoard';
 import DailyQuests from './components/Quests/DailyQuests';
 import Inventory from './components/Inventory/Inventory';
+import Settings from './components/Settings/Settings';
+import Tutorial from './components/Tutorial/Tutorial';
 import LevelUpModal from './components/Modals/LevelUpModal';
 import RewardModal from './components/Modals/RewardModal';
 import LoginPage from './components/Auth/LoginPage';
@@ -29,6 +31,7 @@ function AppContent() {
   const [activeView, setActiveView] = useState('dashboard');
   const [levelUpData, setLevelUpData] = useState(null);
   const [rewardData, setRewardData] = useState(null);
+  const [isTutorialActive, setIsTutorialActive] = useState(false);
   const [loading, setLoading] = useState(true);
   const { signOut } = useAuth();
 
@@ -176,6 +179,10 @@ function AppContent() {
               onItemsChange={refreshItems}
             />
           )}
+
+          {activeView === 'settings' && (
+            <Settings onSignOut={handleSignOut} onStartTutorial={() => setIsTutorialActive(true)} />
+          )}
         </div>
       </main>
 
@@ -194,6 +201,12 @@ function AppContent() {
           onItemClaim={refreshItems}
         />
       )}
+
+      <Tutorial 
+        isActive={isTutorialActive} 
+        onClose={() => setIsTutorialActive(false)} 
+        setActiveView={setActiveView} 
+      />
     </div>
   );
 }
